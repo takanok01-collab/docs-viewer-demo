@@ -1,0 +1,1431 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex, nofollow">
+<style>html,body{height:100%}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}[hidden]{display:none!important}</style>
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'unsafe-inline'; img-src data: blob:; font-src data: blob: https://cdnjs.cloudflare.com; connect-src https://cdnjs.cloudflare.com; worker-src blob: https://cdnjs.cloudflare.com; base-uri 'none'; form-action 'none'">
+<script>window.KK_DEMO_ONLY = true; if (window.top !== window.self) { document.documentElement.style.display = "none"; }</script>
+</head>
+<body>
+<title>工事資料（表示確認用デモ）</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+/* 工事資料（表示確認用デモ）Ver.0.2.1 先行実用版
+   配置：iPhone＝ホーム→現場の1画面ずつ。iPad横・PC＝左に現場一覧、右に資料一覧の2ペイン。資料は全画面で開く。
+   方針：白と淡いグレーが基調。色は「最新・旧版・書き込み済み・失敗」の状態と、緑のアクセントだけに使う。 */
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --raise:#fbfbfa; --ink:#1b211e; --muted:#5d6762; --faint:#89928d;
+  --line:#e1e4df; --sep:#eceee9; --hover:#f0f2ef; --sel:#e7f0ea;
+  --accent:#2c6148; --accent-ink:#235139; --on-accent:#ffffff;
+  --ok:#2b7a4b; --ok-soft:#e5f1e9; --old:#8a5a12; --old-soft:#f7eedd; --ann:#7a4f0c; --ann-soft:#f8efdc;
+  --danger:#b3261e; --danger-soft:#f8e1de;
+  --paper:#ffffff; --paper-ink:#2b302d; --paper-line:#59615c; --paper-faint:#a6ada8; --pen:#d2412f;
+  --stage:#e8eae6; --scrim:rgba(14,18,16,.42); --toast-bg:#1b211e; --toast-ink:#f5f6f4;
+  --pdf:#b3261e; --xls:#1f7a45; --doc:#2b5797; --cad:#8a5a12;
+  --font:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic UI","Meiryo",sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --list-w:340px; --head-h:52px;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#111513; --surface:#181d1a; --raise:#1c221f; --ink:#e9ede9; --muted:#a3ada7; --faint:#7f8983;
+  --line:#2a322e; --sep:#222925; --hover:#1f2622; --sel:#1d3328;
+  --accent:#7cc39c; --accent-ink:#9fd3b6; --on-accent:#0f1512;
+  --ok:#6cc391; --ok-soft:#1b3326; --old:#e2b064; --old-soft:#33291a; --ann:#e8be72; --ann-soft:#352a17;
+  --danger:#f08a80; --danger-soft:#3a201d;
+  --paper:#e6e8e4; --paper-ink:#232825; --paper-line:#4e5651; --paper-faint:#9aa19c; --pen:#c23a29;
+  --stage:#0c0f0d; --scrim:rgba(0,0,0,.6); --toast-bg:#e9ede9; --toast-ink:#111513;
+  --pdf:#f08a80; --xls:#6cc391; --doc:#8fb1ea; --cad:#e2b064;
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#111513; --surface:#181d1a; --raise:#1c221f; --ink:#e9ede9; --muted:#a3ada7; --faint:#7f8983;
+  --line:#2a322e; --sep:#222925; --hover:#1f2622; --sel:#1d3328;
+  --accent:#7cc39c; --accent-ink:#9fd3b6; --on-accent:#0f1512;
+  --ok:#6cc391; --ok-soft:#1b3326; --old:#e2b064; --old-soft:#33291a; --ann:#e8be72; --ann-soft:#352a17;
+  --danger:#f08a80; --danger-soft:#3a201d;
+  --paper:#e6e8e4; --paper-ink:#232825; --paper-line:#4e5651; --paper-faint:#9aa19c; --pen:#c23a29;
+  --stage:#0c0f0d; --scrim:rgba(0,0,0,.6); --toast-bg:#e9ede9; --toast-ink:#111513;
+  --pdf:#f08a80; --xls:#6cc391; --doc:#8fb1ea; --cad:#e2b064;
+  color-scheme:dark;
+}
+
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.5}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+button,input,select{font:inherit;color:inherit}
+button{background:none;border:0;padding:0;cursor:pointer;text-align:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+svg.i{width:20px;height:20px;flex:none;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.num{font-variant-numeric:tabular-nums}
+.gut{padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* ---------- 枠 ---------- */
+.listpane,.mainpane{min-width:0}
+.mainpane{display:none}
+body.v-site .listpane{display:none}
+body.v-site .mainpane{display:block}
+@media (min-width:1000px){
+  .app{display:grid;grid-template-columns:var(--list-w) minmax(0,1fr);height:100vh;height:100dvh}
+  .listpane,.mainpane{display:block!important;overflow-y:auto;height:100%}
+  .listpane{border-right:1px solid var(--line);background:var(--surface)}
+  .backbtn:not(.vback){display:none!important}
+}
+
+/* ---------- ヘッダー（社名＋検索を1行に） ---------- */
+.lhead{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.hrow{display:flex;align-items:center;gap:10px;height:var(--head-h)}
+.brand{flex:none;display:flex;flex-direction:column;line-height:1.1}
+.brand small{font-size:10px;letter-spacing:.16em;color:var(--faint)}
+.brand b{font-size:15px;letter-spacing:.06em;color:var(--accent-ink)}
+.search{position:relative;flex:1;min-width:0}
+.search svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--faint)}
+.search input{width:100%;height:36px;border-radius:9px;border:1px solid var(--line);background:var(--bg);color:var(--ink);padding:0 34px 0 33px;font-size:16px;-webkit-appearance:none;appearance:none}
+.search input::placeholder{color:var(--faint)}
+.search input:focus{outline:none;border-color:var(--accent);background:var(--surface)}
+.search .clr{position:absolute;right:2px;top:50%;transform:translateY(-50%);width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:var(--faint)}
+.ibtn{flex:none;width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--muted)}
+.ibtn:hover,.ibtn:active{background:var(--hover);color:var(--ink)}
+.modetag{font-size:10.5px;font-weight:700;color:var(--old);background:var(--old-soft);border-radius:5px;padding:1px 6px;white-space:nowrap}
+
+/* ---------- ホーム ---------- */
+.recentbar{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-block:10px 2px}
+.recentbar::-webkit-scrollbar{display:none}
+.rchip{flex:none;max-width:200px;height:34px;padding:0 12px;border-radius:17px;border:1px solid var(--line);background:var(--surface);font-size:13.5px;font-weight:600;display:inline-flex;align-items:center}
+.rchip span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rchip.sel{border-color:var(--accent);background:var(--sel);color:var(--accent-ink)}
+.lbar{display:flex;align-items:center;justify-content:space-between;gap:8px;padding-block:12px 4px}
+.lbar h2{margin:0;font-size:12px;font-weight:700;color:var(--faint);letter-spacing:.08em}
+.tbtn{display:inline-flex;align-items:center;gap:5px;height:32px;padding:0 10px;border-radius:8px;font-size:13.5px;font-weight:600;color:var(--accent-ink);white-space:nowrap}
+.tbtn:hover,.tbtn:active{background:var(--hover)}
+.tbtn svg{width:17px;height:17px}
+.tbtn.solid{background:var(--accent);color:var(--on-accent)}
+.slist{display:flex;flex-direction:column;padding-bottom:40px}
+.srow{display:flex;align-items:center;gap:10px;min-height:54px;padding-block:7px;border-bottom:1px solid var(--sep);width:100%}
+.srow:hover{background:var(--hover)}
+.srow .m{flex:1;min-width:0;display:flex;flex-direction:column}
+.srow .n{font-size:16px;font-weight:650;font-weight:600;line-height:1.35}
+.srow .s{font-size:12px;color:var(--faint);line-height:1.4}
+.srow.sel{background:var(--sel);box-shadow:inset 3px 0 0 var(--accent)}
+.srow .chev{color:var(--faint);width:16px;height:16px}
+.listpane .slist .srow{padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:12px}
+.empty{padding:28px 0;text-align:center;color:var(--muted);font-size:14px}
+mark{background:var(--old-soft);color:inherit;border-radius:3px;padding:0 1px}
+
+/* ---------- 現場 ---------- */
+.mhead{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+@media (min-width:1000px){.mhead{top:0}}
+.mtop{display:flex;align-items:center;gap:4px;min-height:var(--head-h);padding-block:6px}
+.backbtn{flex:none;display:flex;align-items:center;width:36px;height:36px;margin-left:-8px;justify-content:center;color:var(--accent-ink);border-radius:9px}
+.backbtn:hover{background:var(--hover)}
+.stitle{flex:1;min-width:0}
+.stitle h1{margin:0;font-size:19px;font-weight:700;line-height:1.3;letter-spacing:.01em}
+.stitle p{margin:0;font-size:12px;color:var(--faint)}
+/* 4分類：枠のある独立したボタン。選択中は塗りつぶし。下段の「種類」の絞り込みとは見た目の階層を分ける */
+.cats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;padding-block:2px 10px}
+.cat{min-width:0;min-height:48px;border-radius:10px;border:1px solid var(--line);background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px}
+.cat .nm{display:flex;align-items:center;gap:5px;font-size:14.5px;font-weight:700;line-height:1.25;white-space:nowrap;color:var(--ink)}
+.cat .nm svg{width:16px;height:16px;color:var(--muted)}
+.cat .c{font-size:11px;font-weight:600;line-height:1.25;color:var(--faint)}
+.cat:hover{border-color:var(--faint)}
+.cat.sel{background:var(--accent);border-color:var(--accent)}
+.cat.sel .nm,.cat.sel .nm svg,.cat.sel .c{color:var(--on-accent)}
+@media (max-width:440px){.cat .nm svg{display:none}.cat .nm{font-size:14px}}
+@media (max-width:350px){.cat .nm{font-size:12.5px}}
+.pj{font-size:12px;color:var(--muted)}
+button.pj{display:inline-flex;align-items:center;gap:2px;height:26px;margin-top:2px;padding:0 6px 0 9px;border-radius:13px;border:1px solid var(--line);background:var(--bg);font-weight:700;color:var(--accent-ink);max-width:100%}
+button.pj span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+button.pj svg{width:14px;height:14px;transform:rotate(90deg)}
+input[type=search]::-webkit-search-cancel-button{-webkit-appearance:none;display:none}
+.mbody{padding-block:8px 60px;max-width:900px}
+.subs{display:flex;align-items:center;gap:2px;padding-block:0 8px;overflow-x:auto;scrollbar-width:none}
+.subs .sl{flex:none;font-size:11px;font-weight:700;color:var(--faint);letter-spacing:.06em;margin-right:6px}
+.chip{flex:none;height:30px;padding:0 11px;border-radius:15px;font-size:13px;color:var(--muted)}
+.chip.sel{background:var(--sel);color:var(--accent-ink);font-weight:700}
+/* メモ写真 */
+.memobar{display:grid;grid-template-columns:1.4fr 1fr;gap:8px;margin:0 0 10px}
+.mbtn{min-height:48px;border-radius:10px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;gap:7px;font-size:15px;font-weight:700}
+.mbtn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.thumb{flex:none;width:44px;height:44px;border-radius:6px;border:1px solid var(--line);background:var(--bg) center/cover no-repeat;display:flex;align-items:center;justify-content:center;color:var(--faint)}
+.thumb.has svg{display:none}
+.pendbar{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:var(--old-soft);color:var(--old);border-radius:10px;padding:8px 10px;margin:0 0 10px;font-size:13px;font-weight:700}
+.pendbar span{flex:1 1 180px}
+.pendbar button{height:32px;padding:0 12px;border-radius:8px;border:1px solid currentColor;font-size:13px;font-weight:700}
+.listpane .pendbar{margin:8px 0 0}
+.mprev{display:block;max-width:100%;max-height:40vh;margin:0 auto 12px;border-radius:8px;border:1px solid var(--line)}
+.dest{font-size:13px;font-weight:700;background:var(--sel);color:var(--accent-ink);border-radius:8px;padding:8px 10px;margin:0 0 12px}
+.plist{display:flex;flex-direction:column;gap:6px;margin:0 0 12px}
+.plist button{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:50px;padding:6px 12px;border-radius:9px;border:1px solid var(--line);font-size:15px;font-weight:700;text-align:left}
+.plist button.sel{border-color:var(--accent);background:var(--sel);color:var(--accent-ink)}
+.plist small{flex:none;font-weight:500;font-size:12px;color:var(--faint)}
+.cand{display:flex;align-items:center;gap:6px;padding:6px 6px 6px 10px;border-radius:8px;border:1px solid var(--line)}
+.cand .m{flex:1;min-width:0;display:flex;flex-direction:column;font-size:14px;font-weight:700;line-height:1.35}
+.cand small{font-size:12px;font-weight:500;color:var(--faint)}
+.cbtn{flex:none;height:36px;padding:0 10px;border-radius:8px;border:1px solid var(--line);font-size:13px;font-weight:700}
+.cbtn.pri{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.dlist{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.series+.series{border-top:1px solid var(--sep)}
+.drow{display:flex;align-items:center;min-height:56px}
+.drow:hover{background:var(--hover)}
+.drow .open{flex:1;min-width:0;display:flex;align-items:center;gap:10px;padding:8px 0 8px 12px;align-self:stretch}
+.ft{flex:none;width:34px;height:20px;border-radius:4px;font-size:9.5px;font-weight:800;letter-spacing:.03em;display:flex;align-items:center;justify-content:center;border:1px solid currentColor;opacity:.9}
+.ft.img{color:var(--accent-ink)} .ft.pdf{color:var(--pdf)} .ft.xlsx,.ft.xls,.ft.csv{color:var(--xls)} .ft.docx,.ft.doc{color:var(--doc)} .ft.dwg,.ft.jww,.ft.dxf{color:var(--cad)} .ft.other{color:var(--faint)}
+.dm{flex:1;min-width:0;display:flex;flex-direction:column}
+.dt{font-size:15.5px;font-weight:600;line-height:1.35;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;word-break:break-all}
+.dmeta{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--faint);line-height:1.5;margin-top:1px}
+.dmeta .dot::before{content:"・"}
+.st{display:inline-flex;align-items:center;height:18px;padding:0 6px;border-radius:4px;font-size:11px;font-weight:700;white-space:nowrap}
+.st.new{background:var(--ok-soft);color:var(--ok)}
+.st.old{background:var(--old-soft);color:var(--old)}
+.st.ann{background:var(--ann-soft);color:var(--ann)}
+.kebab{flex:none;width:44px;height:44px;border-radius:9px;display:flex;align-items:center;justify-content:center;color:var(--faint)}
+.kebab:hover{background:var(--sep);color:var(--ink)}
+.morebtn{display:flex;align-items:center;gap:4px;width:100%;min-height:36px;padding:0 12px 0 56px;font-size:12.5px;color:var(--muted);border-top:1px dashed var(--sep)}
+.morebtn svg{width:14px;height:14px;transition:transform .15s}
+.morebtn[aria-expanded="true"] svg{transform:rotate(90deg)}
+.older{background:var(--raise);border-top:1px solid var(--sep)}
+.older .drow{min-height:48px}
+.older .drow .open{padding-left:28px}
+.older .dt{font-size:14px;font-weight:500;color:var(--muted);-webkit-line-clamp:1}
+.older .grp{font-size:11px;font-weight:700;color:var(--faint);letter-spacing:.06em;padding:8px 12px 0 28px}
+.dropzone{margin-top:12px;border:1.5px dashed var(--line);border-radius:10px;padding:14px;text-align:center;color:var(--faint);font-size:13px;display:none}
+@media (hover:hover) and (pointer:fine){.dropzone{display:block}}
+.loading{padding:30px 0;text-align:center;color:var(--muted);font-size:14px}
+.placeholder{display:none}
+@media (min-width:1000px){.placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;height:100%;color:var(--muted);text-align:center;padding:40px;font-size:14px}.placeholder b{font-size:18px;color:var(--ink)}}
+.path{font-family:var(--mono);font-size:11.5px;color:var(--faint);word-break:break-all}
+
+/* ---------- 資料ビューア ---------- */
+.viewer{position:fixed;inset:0;z-index:40;background:var(--stage);display:flex;flex-direction:column}
+.vbar{background:var(--surface);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.vbar .in{display:flex;align-items:center;gap:6px;min-height:50px}
+.vtitle{flex:1;min-width:0}
+.vtitle b{display:block;font-size:15.5px;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vtitle small{display:block;font-size:11.5px;color:var(--faint);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.zoom{display:flex;align-items:center;background:var(--bg);border-radius:9px;border:1px solid var(--line)}
+.zoom button{width:38px;height:36px;display:flex;align-items:center;justify-content:center}
+.zoom .zv{width:auto;min-width:48px;padding:0 4px;font-size:12px;font-weight:700;color:var(--muted)}
+.vstate{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding-block:6px;font-size:13px;font-weight:700;min-height:36px}
+.vstate svg{width:17px;height:17px}
+.vstate>span:not(.sp){flex:1 1 200px;min-width:0}
+.vstate.ok{background:var(--ok-soft);color:var(--ok)}
+.vstate.old{background:var(--danger-soft);color:var(--danger)}
+.vstate.ann{background:var(--ann-soft);color:var(--ann)}
+.vstate button{height:30px;padding:0 10px;border-radius:7px;background:var(--danger);color:#fff;font-size:12.5px}
+:root[data-theme="dark"] .vstate button{color:#1b0f0e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .vstate button{color:#1b0f0e}}
+.vmain{flex:1;min-height:0;display:flex}
+.stage{flex:1;min-width:0;overflow:auto;-webkit-overflow-scrolling:touch;touch-action:none;overscroll-behavior:contain;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;position:relative}
+.stage .pad{padding:16px;display:flex;flex-direction:column;align-items:center;gap:12px;min-width:min-content}
+.paper{background:var(--paper);box-shadow:0 2px 12px rgba(0,0,0,.16);position:relative;flex:none}
+.paper svg,.paper canvas,.paper img{display:block;width:100%;height:auto}
+.stamp{position:absolute;top:6%;left:5%;border:3px solid var(--danger);color:var(--danger);font-weight:900;font-size:clamp(18px,3.4vw,38px);padding:0 12px;border-radius:6px;transform:rotate(-8deg);letter-spacing:.2em;background:rgba(255,255,255,.6);pointer-events:none}
+.filecard{margin:40px auto;max-width:420px;background:var(--surface);border-radius:12px;padding:24px;text-align:center;display:flex;flex-direction:column;gap:10px;align-items:center}
+.filecard .ft{width:52px;height:30px;font-size:12px}
+.vside{width:320px;flex:none;background:var(--surface);border-left:1px solid var(--line);overflow-y:auto;padding-block:16px 30px;display:none}
+@media (min-width:900px){.vside{display:block}.vfoot{display:none!important}}
+.vside h3{margin:0 0 2px;font-size:17px;line-height:1.35}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px;margin:10px 0 14px}
+.kv dt{color:var(--faint)}
+.kv dd{margin:0;min-width:0}
+.acts{display:flex;flex-direction:column;gap:6px}
+.act{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 12px;border-radius:9px;background:var(--bg);font-size:14px;font-weight:600;width:100%;border:1px solid var(--line)}
+.act.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.act small{display:block;font-size:11.5px;font-weight:500;opacity:.75}
+.act .t{flex:1;min-width:0;line-height:1.3}
+.act.danger{color:var(--danger);background:transparent}
+.act[disabled]{opacity:.45;cursor:not-allowed}
+.actsep{height:1px;background:var(--sep);margin:4px 0}
+.vfoot{background:var(--surface);border-top:1px solid var(--line);padding-block:6px calc(6px + env(safe-area-inset-bottom,0px));display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:6px}
+.vfoot.two{grid-template-columns:1fr 1fr}
+.vfoot button{min-height:46px;border-radius:9px;background:var(--bg);border:1px solid var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:11.5px;font-weight:700}
+.vfoot button.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.vfoot button[disabled]{opacity:.45}
+.vfoot svg{width:18px;height:18px}
+.pdfmsg{color:var(--muted);font-size:14px;padding:40px 0;text-align:center}
+
+/* ---------- シート ---------- */
+.scrim{position:fixed;inset:0;z-index:60;background:var(--scrim);display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-height:92vh;max-height:92dvh;overflow-y:auto;border-radius:14px 14px 0 0;padding-block:6px calc(18px + env(safe-area-inset-bottom,0px))}
+@media (min-width:700px){.scrim{align-items:center}.sheet{width:min(540px,94vw);border-radius:14px;padding-bottom:18px}}
+.sheet .grab{width:36px;height:4px;border-radius:2px;background:var(--line);margin:4px auto 8px}
+@media (min-width:700px){.sheet .grab{display:none}}
+.sheet h2{font-size:17px;margin:6px 0 4px;line-height:1.35}
+.sheet .lead{font-size:13.5px;color:var(--muted);margin:0 0 12px}
+.steps{margin:0 0 12px;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px;counter-reset:s}
+.steps li{counter-increment:s;display:flex;gap:8px;font-size:14px;line-height:1.5}
+.steps li::before{content:counter(s);flex:none;width:20px;height:20px;border-radius:50%;background:var(--sel);color:var(--accent-ink);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.note{font-size:12.5px;color:var(--muted);background:var(--bg);border-radius:8px;padding:8px 10px;margin:0 0 12px}
+.note.warn{background:var(--old-soft);color:var(--old)}
+.note.err{background:var(--danger-soft);color:var(--danger);font-weight:700}
+.note.okk{background:var(--ok-soft);color:var(--ok);font-weight:700}
+.field{display:flex;flex-direction:column;gap:5px;margin:0 0 12px}
+.field>label,.field>.lbl{font-size:12px;font-weight:700;color:var(--muted)}
+.field input[type=text],.field input[type=url],.field input[type=password],.field select{height:44px;border-radius:8px;border:1px solid var(--line);background:var(--bg);padding:0 10px;font-size:16px;width:100%;min-width:0}
+.seg{display:grid;grid-template-columns:repeat(2,1fr);gap:6px}
+.seg.c3{grid-template-columns:repeat(3,1fr)}
+@media (min-width:500px){.seg.c4{grid-template-columns:repeat(4,1fr)}}
+.seg button{min-height:40px;border-radius:8px;border:1px solid var(--line);font-size:13.5px;font-weight:600;padding:4px 6px;text-align:center}
+.seg button.sel{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btns{display:flex;gap:8px;margin-top:4px}
+.btn{flex:1;min-height:46px;border-radius:9px;background:var(--bg);border:1px solid var(--line);font-weight:700;font-size:15px;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px;padding:0 10px}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+.frow{display:flex;gap:8px;align-items:flex-start;padding:8px 0;border-bottom:1px solid var(--sep)}
+.frow .ft{margin-top:12px}
+.frow .m{flex:1;min-width:0;display:flex;flex-direction:column;gap:5px}
+.frow input,.frow select{height:40px;border-radius:8px;border:1px solid var(--line);background:var(--bg);padding:0 8px;font-size:15px;width:100%;min-width:0}
+.frow .fs{font-size:12px;font-weight:700;white-space:nowrap;margin-top:12px}
+.fs.ok{color:var(--ok)} .fs.err{color:var(--danger)} .fs.run{color:var(--muted)}
+.check{display:flex;align-items:center;gap:8px;min-height:44px;font-size:14px}
+.check input{width:20px;height:20px;accent-color:var(--accent)}
+.cands{display:flex;flex-direction:column;gap:4px;margin:0 0 12px}
+.cands button{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:8px;border:1px solid var(--line);font-size:14px;font-weight:600}
+.spin{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);border-top-color:var(--accent);animation:sp .8s linear infinite;display:inline-block;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+@media (prefers-reduced-motion:reduce){.spin{animation:none}}
+
+.dropov{position:fixed;inset:0;z-index:50;background:var(--scrim);display:flex;align-items:center;justify-content:center;padding:24px}
+.dropbox{background:var(--surface);border-radius:14px;padding:20px;width:min(720px,100%)}
+.dropbox h2{margin:0 0 2px;font-size:17px}
+.dropbox p{margin:0 0 14px;color:var(--muted);font-size:13px}
+.dropgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.dt-target{border:2px dashed var(--line);border-radius:10px;min-height:96px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-weight:700;font-size:16px;color:var(--muted)}
+.dt-target small{font-family:var(--mono);font-size:11px;font-weight:500;color:var(--faint)}
+.dt-target.over{border-color:var(--accent);background:var(--sel);color:var(--accent-ink)}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:80;background:var(--toast-bg);color:var(--toast-ink);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;max-width:min(92vw,520px);box-shadow:0 6px 24px rgba(0,0,0,.25)}
+.toast.err{background:var(--danger);color:#fff}
+</style>
+
+<div class="app" id="app">
+  <aside class="listpane" id="listpane"></aside>
+  <main class="mainpane" id="mainpane"></main>
+</div>
+<div id="viewer" class="viewer" hidden></div>
+<div id="overlay" hidden></div>
+<div id="dropov" class="dropov" hidden></div>
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+<input type="file" id="filepick" multiple hidden>
+<input type="file" id="annpick" accept="application/pdf,.pdf" hidden>
+<input type="file" id="memocam" accept="image/*" capture="environment" hidden>
+<input type="file" id="memopick" accept="image/*,.heic,.heif" hidden>
+
+<script>
+(function () {
+'use strict';
+var VERSION = '0.2.1';
+/* ================= 設定 ================= */
+/* 4分類。folder＝工事案件フォルダ内のフォルダ名。04は現場写真アプリの「04_現場写真」と重ならないよう空ける。
+   root＝保存先の区分（'main'＝工事資料、'money'＝見積・予算用）。共有ドライブを分ける場合に使う（Drive接続時の設定で決める）
+   chips＝下段の「種類」の絞り込み。group があれば、保存されている種類（sub）を絞り込み用にまとめる。
+   「その他」の内部キーは Ver.0.2 と同じ meeting（互換のため）。Ver.0.2 の種類（議事録など）は「その他資料」として表示する */
+var MEMO = 'メモ';
+var CATS = [
+  { key: 'drawing',  name: '図面',       icon: 'plan', folder: '01_図面',       root: 'main',  subs: ['既存図', '設計図', 'その他'], chips: ['既存図', '設計図', 'その他'] },
+  { key: 'schedule', name: '工程表',     icon: 'cal',  folder: '02_工程表',     root: 'main',  subs: ['工程表', '改訂工程表', 'その他'] },
+  { key: 'money',    name: '見積・予算', icon: 'yen',  folder: '03_見積・予算', root: 'money', subs: ['自社見積書', '業者見積書', '実行予算書', 'その他'] },
+  { key: 'meeting',  name: 'その他',     icon: 'box',  folder: '05_その他',     root: 'main',  subs: ['その他資料', MEMO], chips: [MEMO, 'その他資料'], group: function (d) { return d.sub === MEMO ? MEMO : 'その他資料'; } }
+];
+function chipOf(c, d) { return c.group ? c.group(d) : d.sub; }
+var OLD_DIR = '_旧版', ANN_DIR = '_書込', ROOT_LABEL = '工事資料';
+var FMT = { pdf: 'PDF', xlsx: 'Excel', xls: 'Excel', csv: 'CSV', docx: 'Word', doc: 'Word', dwg: 'CAD', jww: 'CAD', dxf: 'CAD', jpg: 'JPEG', jpeg: 'JPEG', png: 'PNG', heic: 'HEIC', heif: 'HEIC', webp: 'WebP' };
+function isImg(f) { return /^(jpe?g|png|heic|heif|webp|gif)$/.test(f || ''); }
+var PDFJS = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/';
+
+/* ================= 共通 ================= */
+var $ = function (s, el) { return (el || document).querySelector(s); };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) { return null; } }
+function hm(d) { d = d || new Date(); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+function today() { var d = new Date(); return d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2); }
+function jd(s) { var p = s.split('-'); return +p[0] + '年' + (+p[1]) + '月' + (+p[2]) + '日'; }
+function sd(s) { if (!s) return ''; var p = s.split('-'); return (p[0] === today().slice(0, 4) ? '' : p[0] + '/') + (+p[1]) + '/' + (+p[2]); }
+function ymd(s) { return s.replace(/-/g, ''); }
+function kb(n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; }
+function extOf(name) { var m = /\.([a-z0-9]+)$/i.exec(name || ''); return m ? m[1].toLowerCase() : ''; }
+function ftClass(f) { return isImg(f) ? 'img' : /^(pdf|xlsx|xls|csv|docx|doc|dwg|jww|dxf)$/.test(f) ? f : 'other'; }
+function ftTag(f) { return esc((f || '?').toUpperCase().slice(0, 4)); }
+function uuid() { if (window.crypto && crypto.randomUUID) return crypto.randomUUID(); return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) { var r = Math.random() * 16 | 0; return (c === 'x' ? r : (r & 3 | 8)).toString(16); }); }
+/* 現場ID：UUIDv7（ID設計方針 Ver.0.2.2）。作成時刻＋乱数。業務上の意味は持たせない */
+function uuidv7() {
+  var t = Date.now(), b = new Uint8Array(16); try { crypto.getRandomValues(b); } catch (e) { for (var i = 0; i < 16; i++) b[i] = Math.random() * 256 | 0; }
+  for (var k = 5; k >= 0; k--) { b[k] = t % 256; t = Math.floor(t / 256); }
+  b[6] = (b[6] & 0x0f) | 0x70; b[8] = (b[8] & 0x3f) | 0x80;
+  var h = Array.prototype.map.call(b, function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+  return h.slice(0, 8) + '-' + h.slice(8, 12) + '-' + h.slice(12, 16) + '-' + h.slice(16, 20) + '-' + h.slice(20);
+}
+/* 検索・重複判定用の正規化（全角半角・空白・カタカナ／ひらがな・会社の種類） */
+function norm(s) {
+  s = String(s || '').normalize('NFKC').toLowerCase().replace(/株式会社|\(株\)|有限会社|[\s・･\-ー_　]/g, '');
+  return s.replace(/[ァ-ヶ]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 0x60); });
+}
+/* MD5：アップロード後に Drive が返す md5Checksum と照合し、保存されたことを確かめるために使う */
+function md5(bytes){var K=[],S=[7,12,17,22,7,12,17,22,7,12,17,22,7,12,17,22,5,9,14,20,5,9,14,20,5,9,14,20,5,9,14,20,4,11,16,23,4,11,16,23,4,11,16,23,4,11,16,23,6,10,15,21,6,10,15,21,6,10,15,21,6,10,15,21],i;
+for(i=0;i<64;i++)K[i]=Math.floor(Math.abs(Math.sin(i+1))*4294967296)|0;
+var n=bytes.length,nb=((n+8)>>>6)+1,w=new Int32Array(nb*16);
+for(i=0;i<n;i++)w[i>>2]|=bytes[i]<<((i%4)*8);
+w[n>>2]|=0x80<<((n%4)*8);w[nb*16-2]=(n*8)|0;w[nb*16-1]=Math.floor(n/536870912)|0;
+var a0=0x67452301,b0=0xefcdab89|0,c0=0x98badcfe|0,d0=0x10325476;
+for(var j=0;j<w.length;j+=16){var A=a0,B=b0,C=c0,D=d0,F,g,t,x;
+for(i=0;i<64;i++){if(i<16){F=(B&C)|(~B&D);g=i}else if(i<32){F=(D&B)|(~D&C);g=(5*i+1)%16}else if(i<48){F=B^C^D;g=(3*i+5)%16}else{F=C^(B|~D);g=(7*i)%16}
+t=D;D=C;C=B;x=(A+F+K[i]+w[j+g])|0;B=(B+((x<<S[i])|(x>>>(32-S[i]))))|0;A=t}
+a0=(a0+A)|0;b0=(b0+B)|0;c0=(c0+C)|0;d0=(d0+D)|0}
+return[a0,b0,c0,d0].map(function(v){var s='';for(var k=0;k<4;k++)s+=('0'+((v>>>(k*8))&255).toString(16)).slice(-2);return s}).join('')}
+function readBytes(file) { return new Promise(function (res, rej) { var r = new FileReader(); r.onload = function () { res(new Uint8Array(r.result)); }; r.onerror = function () { rej(new Error('ファイルを読み込めませんでした')); }; r.readAsArrayBuffer(file); }); }
+function b64(bytes) { var s = '', CH = 0x8000; for (var i = 0; i < bytes.length; i += CH) s += String.fromCharCode.apply(null, bytes.subarray(i, i + CH)); return btoa(s); }
+function unb64(s) { var bin = atob(s), u = new Uint8Array(bin.length); for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i); return u; }
+
+var ICONS = {
+  search: '<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>', x: '<path d="M6 6l12 12M18 6L6 18"/>',
+  back: '<path d="M15 5l-7 7 7 7"/>', chev: '<path d="M9 5l7 7-7 7"/>', plus: '<path d="M12 5v14M5 12h14"/>',
+  pen: '<path d="M4 20l1.2-4.4L15.8 5a2 2 0 0 1 2.8 0l.4.4a2 2 0 0 1 0 2.8L8.4 18.8z"/><path d="M13.5 7.3l3.2 3.2"/>',
+  share: '<path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11H5a1 1 0 0 0-1 1v8a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-8a1 1 0 0 0-1-1h-1"/>',
+  ext: '<path d="M14 4h6v6M20 4l-9 9"/><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/>',
+  dots: '<circle cx="5.5" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="18.5" cy="12" r="1.2" fill="currentColor"/>',
+  minus: '<path d="M5 12h14"/>', edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/>',
+  move: '<path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/><path d="M10 13.5h6M13.5 11l2.5 2.5-2.5 2.5"/>',
+  trash: '<path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 13h9l1-13"/>', dl: '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/>',
+  upload: '<path d="M12 15V4M7.5 8.5L12 4l4.5 4.5M5 19.5h14"/>',
+  folder: '<path d="M3.5 7.5A1.5 1.5 0 0 1 5 6h4l2 2h8a1.5 1.5 0 0 1 1.5 1.5v8A1.5 1.5 0 0 1 19 19H5a1.5 1.5 0 0 1-1.5-1.5z"/>',
+  check: '<path d="M5 12.5l4.5 4.5L19 7.5"/>', warn: '<path d="M12 4l9 16H3z"/><path d="M12 10v4.5M12 17.2v.3"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+  sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/>',
+  moon: '<path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/>',
+  plan: '<rect x="4" y="4" width="16" height="16" rx="1.5"/><path d="M4 11h7v9M11 4v3.5M15 11h5"/>',
+  cal: '<rect x="3.5" y="5" width="17" height="15" rx="1.5"/><path d="M3.5 10h17M8 3v4M16 3v4M7 14h5M10 17h6"/>',
+  yen: '<path d="M7 4l5 7 5-7M12 11v9M8 13h8M8 16.5h8"/>',
+  box: '<path d="M4 8l8-4 8 4v8l-8 4-8-4z"/><path d="M4 8l8 4 8-4M12 12v8"/>',
+  camera: '<path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2.2l1.5-2h5.6l1.5 2h2.2A1.5 1.5 0 0 1 20 8.5v9a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 17.5z"/><circle cx="12" cy="12.5" r="3.5"/>',
+  image: '<rect x="3.5" y="4.5" width="17" height="15" rx="1.5"/><circle cx="9" cy="9.5" r="1.6"/><path d="M4 17l5-5 4 4 3-3 4 4"/>'
+};
+function ic(n, cls) { return '<svg class="i' + (cls ? ' ' + cls : '') + '" viewBox="0 0 24 24" aria-hidden="true">' + ICONS[n] + '</svg>'; }
+var toastT;
+function toast(msg, err) { var t = $('#toast'); t.textContent = msg; t.className = 'toast' + (err ? ' err' : ''); t.hidden = false; clearTimeout(toastT); toastT = setTimeout(function () { t.hidden = true; }, err ? 5500 : 2600); }
+
+/* ================= 表示テーマ（端末に合わせる／ライト／ダーク。手動の選択は端末に保存） ================= */
+var THEME_KEY = 'kk-docs.theme';
+function applyTheme(t) { if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t); else document.documentElement.removeAttribute('data-theme'); }
+var theme = ls(THEME_KEY) || 'auto'; applyTheme(theme);
+function setTheme(t) { theme = t; applyTheme(t); ls(THEME_KEY, t === 'auto' ? null : t); }
+function isDark() { return theme === 'dark' || (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches); }
+
+/* ================= データ ================= */
+/* SITES：現場。PROJECTS：工事案件（1つの現場に複数の工事。新装・追加・数年後の改修など）。DOCS：資料。
+   どれも画面用の写し。原本と正式な情報は Drive と管理用シート（接続時）にある。
+   資料の項目：id（DriveファイルID）, siteId, projectId, sid（同じ資料の版をまとめるID）, cat, sub, series（資料名）, v（版）, kind（original／annotated）,
+   baseV（書き込み済みの元の版）, fmt, date, time, size, note, uid（送信ID。二重登録を防ぐ） */
+var SITES = [], PROJECTS = [], DOCS = [], loaded = {};
+function site(id) { for (var i = 0; i < SITES.length; i++) if (SITES[i].id === id) return SITES[i]; return null; }
+function project(id) { for (var i = 0; i < PROJECTS.length; i++) if (PROJECTS[i].id === id) return PROJECTS[i]; return null; }
+function projDocs(pid) { return DOCS.filter(function (d) { return d.projectId === pid; }); }
+function projUpdated(pid) { var m = ''; projDocs(pid).forEach(function (d) { if (d.date > m) m = d.date; }); return m || (project(pid) && project(pid).created) || ''; }
+function siteProjects(sid) { return PROJECTS.filter(function (p) { return p.siteId === sid; }).sort(function (a, b) { return projUpdated(b.id).localeCompare(projUpdated(a.id)) || String(b.created).localeCompare(String(a.created)); }); }
+function doc(id) { for (var i = 0; i < DOCS.length; i++) if (DOCS[i].id === id) return DOCS[i]; return null; }
+function catDef(k) { for (var i = 0; i < CATS.length; i++) if (CATS[i].key === k) return CATS[i]; return CATS[0]; }
+function originals(d) { return DOCS.filter(function (x) { return x.kind === 'original' && x.sid === d.sid; }).sort(function (a, b) { return b.v - a.v; }); }
+function latestOf(d) { return originals(d)[0] || null; }
+function isLatest(d) { var l = latestOf(d); return d.kind === 'original' && !!l && l.id === d.id; }
+function siteDocs(id) { return DOCS.filter(function (d) { return d.siteId === id; }); }
+function cleanName(s) { return String(s).replace(/[\\/:*?"<>|]/g, '').trim(); }
+function isMemo(d) { return d.sub === MEMO && d.kind === 'original'; }
+function fileName(d) { return isMemo(d) ? cleanName(d.series) + '_' + ymd(d.date) + '-' + (d.time || '00:00').replace(':', '') + '.' + d.fmt : cleanName(d.series) + '_第' + d.v + '版' + (d.kind === 'annotated' ? '_書込' : '') + '_' + ymd(d.date) + '.' + d.fmt; }
+function folderPath(d) {
+  var s = site(d.siteId), p = project(d.projectId), c = catDef(d.cat);
+  return (c.root === 'money' ? '［見積・予算の保存先］/' : ROOT_LABEL + '/') + s.customer + '/' + s.name + '/' + (p ? cleanName(p.name) + '/' : '') + c.folder + '/' + (d.kind === 'annotated' ? ANN_DIR + '/' : !isLatest(d) ? OLD_DIR + '/' : '');
+}
+function shareName(d) { return site(d.siteId).name.replace(/\s/g, '') + '_' + fileName(d); }
+
+/* ---------- 試作データ（デモ） ---------- */
+function demoData() {
+  var C = { aoba: '青葉不動産', norte: 'ノルテ', kowa: '港和会', hibari: 'ひばり管理サービス', yamato: '大和町商事', yamate: '山手ベーカリー', hoku: '北辰工務店', shin: 'みどり精機' };
+  var S = [
+    ['016b445e-ec40-79ae-8445-357d763782e7', '青葉通りスクエア', C.aoba, 'あおばどおりすくえあ'],
+    ['017ef675-7580-7242-9794-0b18b093dbf2', 'カフェ・ノルテ 桜町店', C.norte, 'かふぇのるて さくらまちてん'],
+    ['0177ffdc-dac0-7b44-aa86-78a7857e2fd0', 'みなと台クリニックビル', C.kowa, 'みなとだいくりにっくびる'],
+    ['0173b1f9-b980-7155-9f77-1c7988c8bff7', 'ひばりが丘ハイツ 205号室', C.hibari, 'ひばりがおかはいつ'],
+    ['01a11a5d-8920-7d85-8fd1-ce17ecacdad3', '大和町オフィス', C.yamato, 'やまとちょうおふぃす'],
+    ['01a0eb56-59e0-7e7e-86c0-b14772dfd462', '山手ベーカリー本店', C.yamate, 'やまてべーかりーほんてん'],
+    ['019384b3-dbc0-7f4d-8593-fcb538e73c48', '港北倉庫', C.hoku, 'こうほくそうこ'],
+    ['019a0c11-7b20-7c3e-9a41-2d5e8f0b6a13', '緑町事業所 2階会議室', C.shin, 'みどりちょうじぎょうしょ'],
+    ['019a0c12-1e40-7a51-8c22-6f1b3d9e4c70', '品川ショールーム', C.hoku, 'しながわしょーるーむ'],
+    ['019a0c12-9c80-7d02-b7e3-0a4f6c2d8e15', '本町ビル 4階', C.aoba, 'ほんちょうびる']
+  ];
+  SITES = S.map(function (r) { return { id: r[0], name: r[1], customer: r[2], kana: r[3], folderId: null, photoAppSiteId: null }; });
+  /* 工事案件：各現場に1つ（本工事）。青葉通りスクエアだけ、過去の改修工事を含めて2つ */
+  PROJECTS = SITES.map(function (x, i) { return { id: uuidv7(), siteId: x.id, name: i === 0 ? '3階 内装改修' : i === 1 ? '新装工事' : '本工事', created: '2026-08-01' }; });
+  var P2 = { id: uuidv7(), siteId: SITES[0].id, name: '1階 エントランス改修', created: '2023-04-10' }; PROJECTS.push(P2);
+  var sids = {};
+  function D(si, cat, sub, series, v, fmt, date, note, extra) {
+    var pid = extra && extra.projectId || PROJECTS[si].id, key = pid + cat + series; sids[key] = sids[key] || uuid();
+    var d = { id: 'demo-' + uuid().slice(0, 8), siteId: SITES[si].id, projectId: pid, sid: sids[key], cat: cat, sub: sub, series: series, v: v, fmt: fmt, date: date, time: '', note: note || '', kind: 'original', size: (fmt === 'pdf' ? 900 + (series.length * 377 + v * 911) % 4200 : 80 + v * 31) * 1024 };
+    if (extra) for (var k in extra) d[k] = extra[k];
+    return d;
+  }
+  DOCS = [
+    D(0,'drawing','設計図','平面詳細図',3,'pdf','2026-10-12','会議室Bの扉を引戸に変更'),
+    D(0,'drawing','設計図','平面詳細図',2,'pdf','2026-09-30','受付カウンターの位置を変更'),
+    D(0,'drawing','設計図','平面詳細図',1,'pdf','2026-09-12','着工前の承認図'),
+    D(0,'drawing','設計図','平面詳細図',3,'pdf','2026-10-14','現場確認の書き込み',{ kind:'annotated', baseV:3 }),
+    D(0,'drawing','設計図','平面詳細図',2,'pdf','2026-10-02','墨出し時のメモ',{ kind:'annotated', baseV:2 }),
+    D(0,'drawing','設計図','天井伏図',2,'pdf','2026-10-09','照明器具の配置を変更'),
+    D(0,'drawing','設計図','天井伏図',1,'pdf','2026-09-12',''),
+    D(0,'drawing','設計図','会議室 展開図',1,'pdf','2026-09-27',''),
+    D(0,'drawing','設計図','受付カウンター詳細図',2,'pdf','2026-10-06','天板の材質をメラミンに変更'),
+    D(0,'drawing','設計図','受付カウンター詳細図',1,'pdf','2026-09-20',''),
+    D(0,'drawing','設計図','電気設備図（コンセント・照明）',1,'pdf','2026-09-29','コンセント位置の確定版'),
+    D(0,'drawing','既存図','3階 既存平面図（ビル管理会社支給）',1,'pdf','2026-08-20','竣工図からの抜粋'),
+    D(0,'drawing','既存図','3階 既存設備図（空調・スプリンクラー）',1,'pdf','2026-08-20',''),
+    D(0,'drawing','その他','平面詳細図（CADデータ）',3,'jww','2026-10-12','PDF第3版と同じ内容'),
+    D(0,'schedule','工程表','全体工程表',2,'pdf','2026-10-05','内装工事を2日延長'),
+    D(0,'schedule','工程表','全体工程表',1,'pdf','2026-09-15',''),
+    D(0,'schedule','工程表','全体工程表（編集用）',2,'xlsx','2026-10-05',''),
+    D(0,'schedule','その他','週間工程表 10月第4週',1,'pdf','2026-10-19',''),
+    D(0,'money','自社見積書','御見積書（本工事）',2,'pdf','2026-09-02','追加の会議室分を反映'),
+    D(0,'money','自社見積書','御見積書（本工事）',1,'pdf','2026-08-25',''),
+    D(0,'money','業者見積書','電気工事 見積書（東和電設）',1,'pdf','2026-08-30',''),
+    D(0,'money','業者見積書','軽鉄・ボード 見積書（丸井内装）',1,'pdf','2026-08-29',''),
+    D(0,'money','実行予算書','実行予算書',1,'xlsx','2026-09-08',''),
+    D(0,'meeting','議事録','定例打合せ 議事録 第4回',1,'docx','2026-10-16',''),
+    D(0,'meeting','議事録','定例打合せ 議事録 第3回',1,'pdf','2026-10-09',''),
+    D(0,'meeting','仕様書','内装仕上げ表',2,'pdf','2026-09-28','床材の品番を変更'),
+    D(0,'meeting','仕様書','内装仕上げ表',1,'pdf','2026-09-10',''),
+    D(0,'meeting','現場説明資料','ビル管理規約・搬入ルール',1,'pdf','2026-08-20',''),
+    D(1,'drawing','設計図','客席平面図',4,'pdf','2026-10-20','カウンター席を2席追加'),
+    D(1,'drawing','設計図','客席平面図',3,'pdf','2026-10-08',''),
+    D(1,'drawing','設計図','客席平面図',2,'pdf','2026-09-25',''),
+    D(1,'drawing','設計図','カウンター展開図',2,'pdf','2026-10-11',''),
+    D(1,'drawing','設計図','カウンター展開図',1,'pdf','2026-09-28',''),
+    D(1,'drawing','設計図','照明配置図',1,'pdf','2026-10-01',''),
+    D(1,'drawing','既存図','既存図（貸主支給）',1,'dwg','2026-08-03','貸主からの支給データ'),
+    D(1,'schedule','工程表','夜間工事 工程表',3,'pdf','2026-10-15','照明更新を前倒し'),
+    D(1,'schedule','工程表','夜間工事 工程表',2,'pdf','2026-10-01',''),
+    D(1,'money','自社見積書','御見積書',1,'pdf','2026-08-08',''),
+    D(1,'meeting','打合せ資料','照明器具 選定資料',1,'pdf','2026-09-18',''),
+    D(2,'drawing','設計図','2階 平面図',2,'pdf','2026-10-03','処置室の間仕切りを変更'),
+    D(2,'drawing','設計図','2階 平面図',1,'pdf','2026-09-15',''),
+    D(2,'drawing','既存図','給排水 既存設備図',1,'pdf','2026-09-22',''),
+    D(2,'schedule','工程表','全体工程表',1,'pdf','2026-09-26',''),
+    D(2,'money','自社見積書','御見積書',2,'pdf','2026-09-05',''),
+    D(2,'meeting','現場説明資料','診療中の作業ルール',1,'pdf','2026-09-30',''),
+    D(3,'drawing','既存図','205号室 平面図',1,'pdf','2026-10-04',''),
+    D(3,'money','自社見積書','原状回復 御見積書',1,'pdf','2026-10-03',''),
+    D(4,'drawing','既存図','現況平面図',1,'pdf','2026-10-10','現地調査をもとに作成'),
+    D(4,'money','業者見積書','間仕切り 見積書（丸井内装）',1,'pdf','2026-10-17',''),
+    D(5,'drawing','設計図','厨房設備図',1,'pdf','2026-10-01',''),
+    D(5,'money','自社見積書','御見積書',1,'pdf','2026-10-06',''),
+    D(6,'drawing','設計図','事務所区画 平面図',3,'pdf','2025-02-20','竣工時'),
+    D(6,'drawing','設計図','事務所区画 平面図',2,'pdf','2025-02-01',''),
+    D(7,'drawing','既存図','2階 既存平面図',1,'pdf','2026-10-18',''),
+    D(7,'meeting','打合せ資料','会議室レイアウト案',2,'pdf','2026-10-21',''),
+    D(8,'drawing','設計図','展示什器 配置図',1,'pdf','2026-09-04',''),
+    D(9,'drawing','既存図','4階 既存平面図',1,'pdf','2026-07-30',''),
+    D(0,'meeting',MEMO,'定例打合せ 第4回 手書きメモ',1,'jpg','2026-10-16','',{ time:'10:42', size: 612 * 1024 }),
+    D(0,'meeting',MEMO,'天井点検口の位置（現地で確認）',1,'jpg','2026-10-09','',{ time:'15:08', size: 548 * 1024 }),
+    D(0,'meeting',MEMO,'打合せメモ_9月28日',1,'jpg','2026-09-28','',{ time:'09:31', size: 497 * 1024 }),
+    D(1,'meeting',MEMO,'照明器具の打合せメモ',1,'jpg','2026-09-18','',{ time:'14:20', size: 530 * 1024 }),
+    D(0,'drawing','設計図','1階 エントランス 平面図',2,'pdf','2023-05-20','自動ドアの位置を変更',{ projectId: P2.id }),
+    D(0,'drawing','設計図','1階 エントランス 平面図',1,'pdf','2023-04-28','',{ projectId: P2.id }),
+    D(0,'drawing','既存図','1階 既存平面図',1,'pdf','2023-04-12','',{ projectId: P2.id }),
+    D(0,'money','自社見積書','御見積書（エントランス改修）',1,'pdf','2023-04-25','',{ projectId: P2.id }),
+    D(0,'meeting','議事録','着工前打合せ 議事録',1,'pdf','2023-05-02','',{ projectId: P2.id })
+  ];
+  SITES.forEach(function (s) { loaded[s.id] = true; });
+}
+
+/* ================= 接続（デモ／Drive） =================
+   API はどちらも同じ形。Drive 接続は Google Apps Script（gas/Code.gs）を経由し、端末キーで本人確認する。
+   端末キーは端末に保存し、ソースコードには書かない。 */
+var CONN_KEY = 'kk-docs.conn';
+var conn = null; try { conn = JSON.parse(ls(CONN_KEY) || 'null'); } catch (e) { conn = null; }
+/* 表示確認用デモ版（GitHub Pages など公開用）。接続先・端末キーを読まず、入力欄も出さない */
+var DEMO_ONLY = !!window.KK_DEMO_ONLY; if (DEMO_ONLY) conn = null;
+/* 端末ID：この端末を見分けるための乱数。端末キーは最初に使った端末IDにひも付く（キーが漏れても別の端末では使えない） */
+var DEVICE_KEY = 'kk-docs.device', DEVICE = ls(DEVICE_KEY);
+if (!DEVICE || !/^[0-9a-f-]{36}$/.test(DEVICE)) { DEVICE = uuid(); ls(DEVICE_KEY, DEVICE); }
+var demoFail = false;
+var Demo = {
+  name: 'デモ（試作データ）',
+  wait: function (ms) { return new Promise(function (r) { setTimeout(r, ms || 600 + Math.random() * 400); }); },
+  maybeFail: function () { if (demoFail) { demoFail = false; throw new Error('通信が切れました（デモで失敗を再現）'); } },
+  listSites: function () { return Promise.resolve(SITES); },
+  listDocs: function () { return Promise.resolve(); },
+  createSite: function (a) { var self = this; return self.wait().then(function () { self.maybeFail(); var s = { id: uuidv7(), name: a.name, customer: a.customer || 'その他', kana: '', folderId: null, photoAppSiteId: null }; SITES.push(s); PROJECTS.push({ id: uuidv7(), siteId: s.id, name: a.projectName || '本工事', created: today() }); loaded[s.id] = true; return s; }); },
+  createProject: function (a) {
+    var self = this;
+    return self.wait().then(function () {
+      self.maybeFail();
+      if (PROJECTS.some(function (p) { return p.siteId === a.siteId && norm(p.name) === norm(a.name); })) { var e = new Error('この現場には同じ名前の工事があります'); e.code = 'DUP'; throw e; }
+      var p = { id: uuidv7(), siteId: a.siteId, name: a.name, created: today() }; PROJECTS.push(p); return p;
+    });
+  },
+  upload: function (m, file, onp) {
+    var self = this;
+    return readBytes(file).then(function (bytes) {
+      onp && onp(0.4); var sum = md5(bytes);
+      return self.wait(900).then(function () {
+        self.maybeFail();
+        /* 同じ送信ID（uid）がすでに保存済みなら、新しく作らずにそれを返す（二重登録の防止。Apps Script側と同じ動き） */
+        var dup = m.uid && DOCS.filter(function (x) { return x.uid === m.uid; })[0]; if (dup) return dup;
+        if (!project(m.projectId) || project(m.projectId).siteId !== m.siteId) throw new Error('工事案件と現場が合っていません。保存していません');
+        var prev = m.sid ? DOCS.filter(function (x) { return x.sid === m.sid && x.kind === 'original'; }).sort(function (a, b) { return b.v - a.v; })[0] : null;
+        var d = { id: 'demo-' + uuid().slice(0, 8), siteId: m.siteId, projectId: m.projectId, sid: m.sid || uuid(), cat: m.cat, sub: m.sub, series: m.series, v: m.kind === 'annotated' ? m.baseV : (prev ? prev.v + 1 : 1), baseV: m.baseV, kind: m.kind || 'original', fmt: extOf(file.name) || 'bin', date: today(), time: hm(), size: file.size, note: m.note || '', blob: file, md5: sum, uid: m.uid || null };
+        /* デモでは保存直後に読み直して照合する本番の流れを、計算した値の比較で再現する */
+        if (d.md5 !== md5(bytes)) throw new Error('保存した内容が一致しません');
+        DOCS.push(d); onp && onp(1); return d;
+      });
+    });
+  },
+  rename: function (d, name) { var self = this; return self.wait().then(function () { self.maybeFail(); DOCS.forEach(function (x) { if (x.sid === d.sid) x.series = name; }); }); },
+  move: function (d, projectId, cat) { var self = this, p = project(projectId); return self.wait().then(function () { self.maybeFail(); DOCS.forEach(function (x) { if (x.sid === d.sid) { x.siteId = p.siteId; x.projectId = p.id; if (x.cat !== cat) { x.cat = cat; x.sub = cat === 'meeting' ? 'その他資料' : 'その他'; } } }); }); },
+  thumb: function () { return Promise.resolve(null); },
+  trash: function (d) { var self = this; return self.wait().then(function () { self.maybeFail(); DOCS.splice(DOCS.indexOf(d), 1); }); },
+  blob: function (d) { return Promise.resolve(d.blob || null); },
+  driveUrl: function () { return null; }
+};
+var Gas = {
+  name: 'Google Drive',
+  call: function (action, args, timeoutMs) {
+    var ctl = window.AbortController ? new AbortController() : null, tm = setTimeout(function () { ctl && ctl.abort(); }, timeoutMs || 60000);
+    return fetch(conn.url, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify({ action: action, args: args || {}, key: conn.key, device: DEVICE, app: VERSION }), signal: ctl && ctl.signal, redirect: 'follow' })
+      .then(function (r) { if (!r.ok) throw new Error('サーバーの応答が異常です（' + r.status + '）'); return r.json(); })
+      .then(function (j) { clearTimeout(tm); if (!j || !j.ok) { var e = new Error((j && j.error) || '不明なエラー'); e.code = j && j.code; e.data = j && j.data; throw e; } return j.data; })
+      .catch(function (e) { clearTimeout(tm); if (e.name === 'AbortError') throw new Error('時間内に応答がありませんでした。保存されていない可能性があります'); if (e instanceof TypeError) throw new Error('通信できませんでした。電波を確認してください'); throw e; });
+  },
+  listSites: function () { return this.call('listSites').then(function (list) { SITES = list; PROJECTS = []; list.forEach(function (x) { PROJECTS = PROJECTS.concat(x.projects || []); }); return list; }); },
+  listDocs: function (siteId) { return this.call('listDocs', { siteId: siteId }).then(function (list) { DOCS = DOCS.filter(function (d) { return d.siteId !== siteId; }).concat(list); loaded[siteId] = true; }); },
+  createSite: function (a) { return this.call('createSite', a).then(function (s) { SITES.push(s); PROJECTS = PROJECTS.concat(s.projects || []); loaded[s.id] = true; return s; }); },
+  createProject: function (a) { return this.call('createProject', a).then(function (p) { PROJECTS.push(p); return p; }); },
+  upload: function (m, file, onp) {
+    var self = this, CH = 4 * 1024 * 1024;
+    return readBytes(file).then(function (bytes) {
+      var sum = md5(bytes);
+      return self.call('uploadStart', { meta: m, fileName: file.name, mimeType: file.type || 'application/octet-stream', size: bytes.length, md5: sum }).then(function (st) {
+        if (st.dup) return st.dup;  /* 同じ送信IDが保存済み（前回の保存が実は届いていた） */
+        var off = 0, fileId = null;
+        function next() {
+          if (off >= bytes.length && fileId) return Promise.resolve();
+          var part = bytes.subarray(off, Math.min(off + CH, bytes.length));
+          return self.call('uploadChunk', { uploadId: st.uploadId, offset: off, total: bytes.length, data: b64(part) }, 120000).then(function (r) {
+            off += part.length; onp && onp(off / bytes.length * 0.95); if (r.fileId) fileId = r.fileId;
+            if (off < bytes.length) return next();
+            if (!fileId) throw new Error('保存の完了を確認できませんでした');
+          });
+        }
+        return (bytes.length ? next() : Promise.resolve()).then(function () { return self.call('uploadFinish', { uploadId: st.uploadId, fileId: fileId, md5: sum, size: bytes.length }); });
+      });
+    }).then(function (d) { DOCS = DOCS.filter(function (x) { return x.id !== d.id; }); DOCS.push(d); onp && onp(1); return self.listDocs(d.siteId).then(function () { if (!doc(d.id)) DOCS.push(d); return doc(d.id); }); });
+  },
+  rename: function (d, name) { var self = this; return this.call('rename', { sid: d.sid, siteId: d.siteId, name: name }).then(function () { return self.listDocs(d.siteId); }); },
+  move: function (d, projectId, cat) { var self = this, to = project(projectId).siteId; return this.call('move', { sid: d.sid, projectId: projectId, cat: cat }).then(function () { return self.listDocs(d.siteId).then(function () { return to !== d.siteId ? self.listDocs(to) : null; }); }); },
+  thumb: function (d) { return this.call('thumb', { id: d.id }).then(function (r) { return r ? 'data:' + r.mime + ';base64,' + r.data : null; }); },
+  trash: function (d) { var self = this; return this.call('trash', { id: d.id }).then(function () { return self.listDocs(d.siteId); }); },
+  blob: function (d) {
+    if (d.blob) return Promise.resolve(d.blob);
+    var self = this, CH = 4 * 1024 * 1024, parts = [], off = 0;
+    function next() { return self.call('download', { id: d.id, offset: off, length: CH }, 120000).then(function (r) { parts.push(unb64(r.data)); off += r.length; if (off < r.total) return next(); }); }
+    return next().then(function () { d.blob = new Blob(parts, { type: d.mime || 'application/pdf' }); return d.blob; });
+  },
+  driveUrl: function (d) { return 'https://drive.google.com/file/d/' + encodeURIComponent(d.id) + '/view'; }
+};
+var API = conn && conn.url && conn.key ? Gas : Demo;
+
+/* ================= 状態 ================= */
+var state = { view: 'home', siteId: null, projectId: null, cat: 'drawing', sub: null, q: '', open: {}, docId: null, zoom: 0, busy: false, err: null };
+var LASTPROJ_KEY = 'kk-docs.lastproj';
+var lastProj = {}; try { lastProj = JSON.parse(ls(LASTPROJ_KEY) || '{}') || {}; } catch (e) { lastProj = {}; }
+/* 現場を開いたときの工事案件：前回開いた工事。なければ資料の更新が新しい工事 */
+function pickProject(siteId) { var lp = project(lastProj[siteId]); if (lp && lp.siteId === siteId) return lp.id; var ps = siteProjects(siteId); return ps[0] ? ps[0].id : null; }
+function selectProject(pid) { var p = project(pid); if (!p) return; state.projectId = pid; lastProj[p.siteId] = pid; ls(LASTPROJ_KEY, JSON.stringify(lastProj)); state.sub = null; state.open = {}; render(); }
+var RECENT_KEY = 'kk-docs.recent.v2';
+var recent = []; try { recent = JSON.parse(ls(RECENT_KEY) || '[]') || []; } catch (e) { recent = []; }
+function touchRecent(id) { recent = [id].concat(recent.filter(function (x) { return x !== id; })).slice(0, 8); ls(RECENT_KEY, JSON.stringify(recent)); }
+function siteUpdated(id) { var m = ''; siteDocs(id).forEach(function (d) { if (d.date > m) m = d.date; }); return m || (site(id) && site(id).updated) || ''; }
+function siteCount(id) { var n = siteDocs(id).filter(isLatest).length; return n || (site(id) && site(id).count) || 0; }
+
+/* ================= ホーム ================= */
+function hl(text, q) { if (!q) return esc(text); var i = text.indexOf(q); if (i < 0) return esc(text); return esc(text.slice(0, i)) + '<mark>' + esc(text.slice(i, i + q.length)) + '</mark>' + esc(text.slice(i + q.length)); }
+function renderList() {
+  var q = state.q.trim(), nq = norm(q);
+  var h = '<div class="lhead"><div class="gut"><div class="hrow">' +
+    '<div class="brand"><small>表示確認用デモ</small><b>工事資料</b></div>' +
+    '<div class="search">' + ic('search') + '<input id="q" type="search" enterkeyhint="search" autocomplete="off" placeholder="現場名で検索" aria-label="現場名で検索" value="' + esc(state.q) + '">' +
+    (q ? '<button class="clr" data-act="clearq" aria-label="検索をクリア">' + ic('x') + '</button>' : '') + '</div>' +
+    '<button class="ibtn" data-act="settings" aria-label="設定">' + ic('gear') + '</button></div></div></div><div class="gut">';
+  var rs = recent.map(site).filter(Boolean).slice(0, 8);
+  if (!nq && rs.length) h += '<div class="recentbar" aria-label="最近開いた現場">' + rs.map(function (s) { return '<button class="rchip' + (s.id === state.siteId ? ' sel' : '') + '" data-site="' + s.id + '"><span>' + esc(s.name) + '</span></button>'; }).join('') + '</div>';
+  var list;
+  if (nq) {
+    list = SITES.filter(function (s) { return [s.name, s.kana, s.customer].concat(siteProjects(s.id).map(function (p) { return p.name; })).some(function (t) { return norm(t).indexOf(nq) >= 0; }); });
+    h += '<div class="lbar"><h2>「' + esc(q) + '」' + list.length + '件</h2><button class="tbtn" data-act="newsite">' + ic('plus') + '新規案件</button></div>';
+  } else {
+    list = SITES.slice().sort(function (a, b) { return siteUpdated(b.id).localeCompare(siteUpdated(a.id)); });
+    h += '<div class="lbar"><h2>現場一覧 ' + list.length + '件</h2><button class="tbtn" data-act="newsite">' + ic('plus') + '新規案件</button></div>';
+  }
+  if (API === Gas) h += '<div class="lbar" style="padding-top:0"><span class="modetag">Drive接続中' + (conn && conn.mode === 'test' ? '・テスト環境' : '') + '</span></div>';
+  // 現場を開いているときは、その工事の分は右側に出すので、ここでは残りだけ数える
+  var pn = state.view === 'site' && state.siteId ? PENDING.filter(function (r) { return r.projectId !== state.projectId; }).length : PENDING.length;
+  if (pn) h += pendBar(pn);
+  h += '</div>';
+  if (state.err && !SITES.length) h += '<div class="gut"><div class="note err">' + esc(state.err) + '</div></div>';
+  h += list.length ? '<div class="slist">' + list.map(function (s) { return siteRow(s, q); }).join('') + '</div>' : (state.busy ? '<div class="loading"><span class="spin"></span> 読み込み中</div>' : '<div class="empty gut">見つかりません。ひらがな・顧客名でも探せます。<br>新しい現場は［新規案件］から登録します。</div>');
+  $('#listpane').innerHTML = h;
+}
+function siteRow(s, q) {
+  var n = siteCount(s.id), u = siteUpdated(s.id), np = siteProjects(s.id).length;
+  return '<button class="srow' + (s.id === state.siteId ? ' sel' : '') + '" data-site="' + s.id + '"><span class="m"><span class="n ell">' + hl(s.name, q) + '</span>' +
+    '<span class="s ell num">' + hl(s.customer || '', q) + (np > 1 ? '・工事' + np + '件' : '') + (n ? '・資料' + n + '件' : '') + (u ? '・' + sd(u) : '') + '</span></span>' + ic('chev', 'chev') + '</button>';
+}
+
+/* ================= 現場（資料一覧） ================= */
+function renderMain() {
+  var s = site(state.siteId), el = $('#mainpane');
+  if (!s) { el.innerHTML = '<div class="placeholder"><b>現場を選んでください</b><span>ファイルをこの画面にドラッグしても追加できます</span></div>'; return; }
+  if (!project(state.projectId) || project(state.projectId).siteId !== s.id) state.projectId = pickProject(s.id);
+  var p = project(state.projectId), ps = siteProjects(s.id), docs = p ? projDocs(p.id) : [];
+  /* 工事案件：複数あれば切り替えボタン、1つなら名前だけ表示（どの工事に保存するかを常に見えるようにする） */
+  var pj = !p ? '' : ps.length > 1 ? '<button class="pj" data-act="projects" aria-label="工事案件を切り替える"><span>工事：' + esc(p.name) + '</span>' + ic('chev') + '</button>' : '<span class="pj">工事：' + esc(p.name) + '</span>';
+  var h = '<div class="mhead"><div class="gut"><div class="mtop">' +
+    '<button class="backbtn" data-act="home" aria-label="ホームへ戻る">' + ic('back') + '</button>' +
+    '<div class="stitle"><h1 class="ell">' + esc(s.name) + '</h1><p class="ell">' + esc(s.customer || '') + (s.address ? '・' + esc(s.address) : '') + (ps.length > 1 ? '' : '・' + pj) + '</p>' + (ps.length > 1 ? pj : '') + '</div>' +
+    '<button class="tbtn" data-act="drive-folder" aria-label="Driveでフォルダを開く">' + ic('folder') + '<span>Drive</span></button>' +
+    '<button class="tbtn solid" data-act="add">' + ic('plus') + '<span>追加</span></button></div>' +
+    '<div class="cats" role="tablist" aria-label="資料の分類">' + CATS.map(function (c) {
+      var n = docs.filter(function (d) { return d.cat === c.key && isLatest(d); }).length, sel = state.cat === c.key;
+      return '<button class="cat' + (sel ? ' sel' : '') + '" role="tab" aria-selected="' + sel + '" data-cat="' + c.key + '"><span class="nm">' + ic(c.icon) + esc(c.name) + '</span><span class="c num">' + n + '件</span></button>';
+    }).join('') + '</div></div></div><div class="mbody gut">';
+  var mine = PENDING.filter(function (r) { return r.projectId === state.projectId; }).length;
+  if (mine) h += pendBar(mine);
+  h += !p ? '<div class="empty">工事案件がありません。</div>' : loaded[s.id] ? renderDocList(s, docs) : '<div class="loading"><span class="spin"></span> 資料を読み込み中</div>';
+  el.innerHTML = h + '</div>';
+}
+function renderDocList(s, docs) {
+  var c = catDef(state.cat), inCat = docs.filter(function (d) { return d.cat === c.key; }), h = '';
+  if (c.chips) h += '<div class="subs" role="group" aria-label="種類で絞り込む"><span class="sl">種類</span>' + ['すべて'].concat(c.chips).map(function (sb) { var sel = (sb === 'すべて' && !state.sub) || sb === state.sub; return '<button class="chip' + (sel ? ' sel' : '') + '" data-sub="' + esc(sb) + '" aria-pressed="' + sel + '">' + esc(sb) + '</button>'; }).join('') + '</div>';
+  if (c.key === 'meeting' && (!state.sub || state.sub === MEMO)) h += '<div class="memobar"><button class="mbtn primary" data-act="memo-cam">' + ic('camera') + 'メモを撮る</button><button class="mbtn" data-act="memo-pick">' + ic('image') + '写真から選ぶ</button></div>';
+  var list = inCat.filter(function (d) { return isLatest(d) && (!c.chips || !state.sub || chipOf(c, d) === state.sub); });
+  var order = c.chips || c.subs;
+  list.sort(function (a, b) { return order.indexOf(chipOf(c, a)) - order.indexOf(chipOf(c, b)) || b.date.localeCompare(a.date) || String(b.time || '').localeCompare(String(a.time || '')); });
+  if (!list.length) h += '<div class="empty">' + (state.sub === MEMO ? 'メモはまだありません。<br>［メモを撮る］で、紙のメモを撮影して保存できます。' : (state.sub ? '「' + esc(state.sub) + '」の資料はありません' : '「' + esc(c.name) + '」の資料はまだありません') + '<br>右上の［追加］から入れられます。') + '</div>';
+  else h += '<div class="dlist">' + list.map(function (d) {
+    var olds = originals(d).slice(1), anns = DOCS.filter(function (x) { return x.kind === 'annotated' && x.sid === d.sid; }).sort(function (a, b) { return b.date.localeCompare(a.date); });
+    var more = []; if (anns.length) more.push('書き込み済み ' + anns.length); if (olds.length) more.push('旧版 ' + olds.length);
+    var open = !!state.open[d.sid], r = '<div class="series">' + docRow(d, true);
+    if (more.length) {
+      r += '<button class="morebtn" data-toggle="' + d.sid + '" aria-expanded="' + open + '">' + ic('chev') + more.join('・') + '</button>';
+      if (open) r += '<div class="older">' + (anns.length ? '<div class="grp">書き込み済み（原本とは別ファイル）</div>' + anns.map(function (a) { return docRow(a); }).join('') : '') + (olds.length ? '<div class="grp">旧版</div>' + olds.map(function (o) { return docRow(o); }).join('') : '') + '</div>';
+    }
+    return r + '</div>';
+  }).join('') + '</div>';
+  return h + '<div class="dropzone">ファイルをここにドラッグすると「' + esc(c.name) + '」に追加します</div>';
+}
+function docRow(d, main) {
+  var st = d.kind === 'annotated' ? '<span class="st ann">書込</span>' : isLatest(d) ? '<span class="st new">最新</span>' : '<span class="st old">旧版</span>';
+  var title = d.kind === 'annotated' ? (d.note || d.series + '（書込）') : d.series, meta;
+  if (isMemo(d)) meta = '<span class="st ann">メモ</span><span class="num">' + sd(d.date) + (d.time ? ' ' + esc(d.time) : '') + '</span>' + (isImg(d.fmt) ? '' : '<span class="dot">' + esc(FMT[d.fmt] || d.fmt.toUpperCase()) + '</span>');
+  else meta = st + '<span class="num">' + (d.kind === 'annotated' ? '第' + d.baseV + '版に書込' : '第' + d.v + '版') + '</span><span class="dot num">' + sd(d.date) + '</span>' +
+    (main && d.sub && d.sub !== 'その他' ? '<span class="dot">' + esc(d.sub) + '</span>' : '') +
+    (d.kind === 'annotated' && latestOf(d) && d.baseV !== latestOf(d).v ? '<span class="dot" style="color:var(--danger)">原本が旧版</span>' : '');
+  var mark = isImg(d.fmt) ? '<span class="thumb" data-thumb="' + d.id + '">' + ic('image') + '</span>' : '<span class="ft ' + ftClass(d.fmt) + '">' + ftTag(d.fmt) + '</span>';
+  return '<div class="drow"><button class="open" data-doc="' + d.id + '">' + mark + '<span class="dm"><span class="dt">' + esc(title) + '</span><span class="dmeta">' + meta + '</span></span></button>' +
+    '<button class="kebab" data-manage="' + d.id + '" aria-label="' + esc(title) + 'の操作">' + ic('dots') + '</button></div>';
+}
+
+/* ================= 画面の切り替え ================= */
+function render() { document.body.classList.toggle('v-site', state.view === 'site'); renderList(); renderMain(); loadThumbs(); }
+function openSite(id) {
+  if (state.siteId !== id) { state.cat = 'drawing'; state.sub = null; state.open = {}; state.projectId = pickProject(id); }
+  state.siteId = id; state.view = 'site'; touchRecent(id); render();
+  if (window.innerWidth < 1000) window.scrollTo(0, 0); else $('#mainpane').scrollTop = 0;
+  if (!loaded[id]) API.listDocs(id).then(function () { if (state.siteId === id) render(); }).catch(function (e) { toast('資料を読み込めませんでした：' + e.message, true); });
+}
+
+/* ---------- 一覧の小さな画像（メモ写真）。デモは見本の絵、Drive接続時は Drive の縮小画像。1枚ずつ順に読む ---------- */
+var THUMBS = {}, thumbQ = [], thumbRun = false;
+function paintThumb(el, url) { if (!url) return; el.style.backgroundImage = 'url("' + url + '")'; el.classList.add('has'); }
+function loadThumbs() {
+  Array.prototype.forEach.call(document.querySelectorAll('[data-thumb]'), function (el) {
+    var id = el.getAttribute('data-thumb'), d = doc(id); if (!d) return;
+    if (THUMBS[id] !== undefined) { paintThumb(el, THUMBS[id]); return; }
+    if (d.blob) { THUMBS[id] = URL.createObjectURL(d.blob); paintThumb(el, THUMBS[id]); return; }
+    if (API === Demo) { THUMBS[id] = 'data:image/svg+xml,' + encodeURIComponent(memoSVG(d, true)); paintThumb(el, THUMBS[id]); return; }
+    if (thumbQ.indexOf(id) < 0) thumbQ.push(id);
+  });
+  if (thumbRun) return; thumbRun = true;
+  (function next() {
+    var id = thumbQ.shift(); if (!id) { thumbRun = false; return; }
+    var d = doc(id); if (!d || API !== Gas) { next(); return; }
+    API.thumb(d).then(function (u) { THUMBS[id] = u || null; Array.prototype.forEach.call(document.querySelectorAll('[data-thumb="' + id + '"]'), function (el) { paintThumb(el, u); }); }, function () { THUMBS[id] = null; }).then(next);
+  })();
+}
+
+/* ================= 資料ビューア ================= */
+function openDoc(id) { state.docId = id; state.zoom = 0; $('#viewer').hidden = false; document.documentElement.style.overflow = 'hidden'; renderViewer(); }
+function closeDoc() { if (imgUrl) { URL.revokeObjectURL(imgUrl); imgUrl = null; } state.docId = null; $('#viewer').hidden = true; $('#viewer').innerHTML = ''; document.documentElement.style.overflow = ''; pdfDoc = null; pts = {}; pinch = pan = null; stopFling(); }
+function renderViewer() {
+  var d = doc(state.docId); if (!d) { closeDoc(); return; }
+  var s = site(d.siteId), p = project(d.projectId), c = catDef(d.cat), lat = latestOf(d), latest = isLatest(d), pdf = d.fmt === 'pdf';
+  var st;
+  if (isMemo(d)) st = '<div class="vstate ok gut">' + ic('image') + '<span>メモ（' + jd(d.date) + (d.time ? ' ' + esc(d.time) : '') + ' 保存）</span></div>';
+  else if (d.kind === 'annotated') st = '<div class="vstate ann gut">' + ic('pen') + '<span>書き込み済みPDF（原本 第' + d.baseV + '版に書き込み）。原本とは別のファイルです</span>' + (lat && d.baseV !== lat.v ? '<button data-doc="' + lat.id + '">最新の原本 第' + lat.v + '版</button>' : '') + '</div>';
+  else if (latest) st = '<div class="vstate ok gut">' + ic('check') + '<span>最新版（第' + d.v + '版・' + jd(d.date) + '）</span></div>';
+  else st = '<div class="vstate old gut">' + ic('warn') + '<span>旧版 第' + d.v + '版を表示中。最新は第' + lat.v + '版（' + jd(lat.date) + '）</span><button data-doc="' + lat.id + '">最新版を開く</button></div>';
+  var canGn = pdf && (latest || d.kind === 'annotated');
+  $('#viewer').innerHTML = '<div class="vbar"><div class="in gut">' +
+    '<button class="backbtn vback" data-act="closedoc" aria-label="閉じる">' + ic('back') + '</button>' +
+    '<div class="vtitle"><b>' + esc(d.kind === 'annotated' ? d.series + '（書込）' : d.series) + '</b><small>' + esc(s.name) + (p && siteProjects(s.id).length > 1 ? '・' + esc(p.name) : '') + '・' + esc(c.name) + '・' + esc(d.sub) + '</small></div>' +
+    (pdf || isImg(d.fmt) ? '<div class="zoom"><button data-zoom="-1" aria-label="縮小">' + ic('minus') + '</button><button class="zv num" data-zoom="0" aria-label="幅に合わせる">幅</button><button data-zoom="1" aria-label="拡大">' + ic('plus') + '</button></div>' : '') +
+    '</div></div>' + st + '<div class="vmain"><div class="stage" id="stage"><div class="pad" id="pad">' + previewShell(d) + '</div></div>' +
+    '<aside class="vside gut">' + sideHTML(d, canGn) + '</aside></div>' +
+    '<div class="vfoot gut' + (pdf ? '' : ' two') + '">' + (pdf ? '<button class="primary" data-act="goodnotes">' + ic('pen') + (canGn ? 'Goodnotesで書く' : '最新版で書く') + '</button>' : '') +
+    '<button data-act="share">' + ic('share') + '共有・保存</button><button data-act="docmenu">' + ic('dots') + '情報・整理</button></div>';
+  loadPreview(d);
+}
+function sideHTML(d, canGn) {
+  var pdf = d.fmt === 'pdf';
+  var h = '<h3>' + esc(d.kind === 'annotated' ? (d.note || d.series) : d.series) + '</h3>' +
+    '<dl class="kv"><dt>工事</dt><dd>' + esc(project(d.projectId) ? project(d.projectId).name : '') + '</dd><dt>区分</dt><dd>' + esc(catDef(d.cat).name + '・' + d.sub) + '</dd>' +
+    (isMemo(d) ? '<dt>保存日時</dt><dd class="num">' + jd(d.date) + (d.time ? ' ' + esc(d.time) : '') + '</dd>' : '<dt>版</dt><dd>' + (d.kind === 'annotated' ? '書き込み済み（原本 第' + d.baseV + '版）' : '第' + d.v + '版' + (isLatest(d) ? '（最新）' : '（旧版）')) + '</dd>') +
+    '<dt>形式</dt><dd>' + esc(FMT[d.fmt] || d.fmt.toUpperCase()) + '・' + kb(d.size) + '</dd>' + (isMemo(d) ? '' : '<dt>更新日</dt><dd class="num">' + jd(d.date) + '</dd>') +
+    (d.note && d.kind !== 'annotated' ? '<dt>変更内容</dt><dd>' + esc(d.note) + '</dd>' : '') +
+    '<dt>保存場所</dt><dd class="path">' + esc(folderPath(d) + fileName(d)) + '</dd></dl><div class="acts">';
+  if (pdf) h += '<button class="act primary" data-act="goodnotes">' + ic('pen') + '<span class="t">' + (canGn ? 'Goodnotesで書き込む' : '最新版をGoodnotesで書き込む') + '<small>' + (canGn ? 'iPadの共有メニューで渡します' : 'この版は渡しません') + '</small></span></button>';
+  if (pdf && isLatest(d)) h += '<button class="act" data-act="annadd">' + ic('upload') + '<span class="t">書き込み済みPDFを保存<small>原本は上書きしません</small></span></button>';
+  h += '<button class="act" data-act="share">' + ic('share') + '<span class="t">共有・ダウンロード</span></button>' +
+    '<button class="act" data-act="opendrive">' + ic('ext') + '<span class="t">' + (pdf || isImg(d.fmt) ? 'Driveで開く' : d.fmt === 'xlsx' || d.fmt === 'xls' ? 'Excelで開く' : d.fmt === 'docx' || d.fmt === 'doc' ? 'Wordで開く' : '対応アプリで開く') + '</span></button>' +
+    '<div class="actsep"></div><button class="act" data-act="rename">' + ic('edit') + '<span class="t">' + (isMemo(d) ? 'タイトルを変更' : '名前を変更') + '</span></button>' +
+    '<button class="act" data-act="move">' + ic('move') + '<span class="t">別の現場・工事・分類へ移動</span></button>' +
+    '<button class="act danger" data-act="delete">' + ic('trash') + '<span class="t">削除</span></button></div>';
+  return h;
+}
+
+/* ---------- プレビュー：本物のPDFは PDF.js で描く。デモの見本は図の絵 ---------- */
+var pdfDoc = null, pdfLib = null, renderTok = 0;
+function loadScript(src) { return new Promise(function (res, rej) { var s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = function () { rej(new Error('表示用の部品を読み込めませんでした')); }; document.head.appendChild(s); }); }
+function getPdfLib() {
+  if (pdfLib) return Promise.resolve(pdfLib);
+  return loadScript(PDFJS + 'pdf.min.js').then(function () { return loadScript(PDFJS + 'pdf.worker.min.js'); }).then(function () {
+    pdfLib = window.pdfjsLib; pdfLib.GlobalWorkerOptions.workerSrc = PDFJS + 'pdf.worker.min.js'; return pdfLib;
+  });
+}
+function previewShell(d) {
+  if (d.fmt !== 'pdf' && !isImg(d.fmt)) {
+    var app = /xls|csv/.test(d.fmt) ? 'Excel' : /doc/.test(d.fmt) ? 'Word' : /dwg|jww|dxf/.test(d.fmt) ? 'CADソフト' : '対応アプリ';
+    return '<div class="filecard"><span class="ft ' + ftClass(d.fmt) + '">' + ftTag(d.fmt) + '</span><b>' + esc(fileName(d)) + '</b><span style="color:var(--muted);font-size:13px">この形式は画面の中では表示しません。' + app + 'で開くか、ダウンロードしてください。</span>' +
+      '<div class="btns" style="width:100%"><button class="btn primary" data-act="opendrive">' + ic('ext') + app + 'で開く</button><button class="btn" data-act="share">' + ic('dl') + '保存</button></div></div>';
+  }
+  return '<div class="pdfmsg"><span class="spin"></span> 表示の準備中</div>';
+}
+function loadPreview(d) {
+  if (isImg(d.fmt)) { loadImage(d); return; }
+  if (d.fmt !== 'pdf') return;
+  var tok = ++renderTok;
+  API.blob(d).then(function (blob) {
+    if (tok !== renderTok) return;
+    if (!blob) { $('#pad').innerHTML = sampleSVG(d); applyZoom(); return; }
+    return blob.arrayBuffer().then(function (buf) { return getPdfLib().then(function (lib) { return lib.getDocument({ data: new Uint8Array(buf), cMapUrl: PDFJS + 'cmaps/', cMapPacked: true, standardFontDataUrl: PDFJS + 'standard_fonts/' }).promise; }); })
+      .then(function (pd) { if (tok !== renderTok) return; pdfDoc = pd; drawPdf(); });
+  }).catch(function (e) { if (tok === renderTok) $('#pad').innerHTML = '<div class="pdfmsg">表示できませんでした：' + esc(e.message) + '<br>［Driveで開く］から開けます。</div>'; });
+}
+/* 画像（メモ写真）：拡大はPDFと同じ操作。表示できない形式（パソコンのHEICなど）はDriveで開くよう案内する */
+var imgUrl = null;
+function loadImage(d) {
+  var tok = ++renderTok;
+  API.blob(d).then(function (blob) {
+    if (tok !== renderTok) return;
+    if (!blob) { $('#pad').innerHTML = memoSVG(d); applyZoom(); return; }
+    if (imgUrl) URL.revokeObjectURL(imgUrl); imgUrl = URL.createObjectURL(blob);
+    var im = new Image();
+    im.onload = function () { if (tok !== renderTok) return; $('#pad').innerHTML = '<div class="paper" id="paper" data-ratio="' + (im.naturalWidth / im.naturalHeight).toFixed(4) + '"></div>'; im.alt = d.series; $('#paper').appendChild(im); applyZoom(); };
+    im.onerror = function () { if (tok === renderTok) $('#pad').innerHTML = '<div class="pdfmsg">この画像はこの画面では表示できません（HEIC形式など）。<br>［Driveで開く］から開けます。</div>'; };
+    im.src = imgUrl;
+  }).catch(function (e) { if (tok === renderTok) $('#pad').innerHTML = '<div class="pdfmsg">表示できませんでした：' + esc(e.message) + '<br>［Driveで開く］から開けます。</div>'; });
+}
+function drawPdf() {
+  if (!pdfDoc) return;
+  // 紙（.paper）は作り直さず、描き直した絵（canvas）だけを差し替える。紙を消すと表示位置が先頭に戻ってしまうため
+  var tok = ++drawTok, pd = pdfDoc, pad = $('#pad'), st = $('#stage');
+  var base = Math.max(260, st.clientWidth - 32), z = state.zoom || 1, dpr = Math.min(window.devicePixelRatio || 1, 2);
+  var papers = pad.querySelectorAll('.paper'); if (papers.length !== pd.numPages) { pad.innerHTML = ''; papers = []; }
+  var cap = Math.min(16e6, 48e6 / pd.numPages); // 1枚の絵の画素数の上限。iPhoneは絵の合計が大きすぎると白くなるため
+  var n = 1;
+  (function page() {
+    if (n > pd.numPages || tok !== drawTok || pd !== pdfDoc) return;
+    pd.getPage(n).then(function (p) {
+      if (tok !== drawTok) return;
+      var v1 = p.getViewport({ scale: 1 }), w = base * z, sc = w / v1.width, r = Math.min(dpr, Math.sqrt(cap / (w * w * v1.height / v1.width))), vp = p.getViewport({ scale: sc * r });
+      var wrap = papers[n - 1];
+      if (!wrap) {
+        wrap = document.createElement('div'); wrap.className = 'paper';
+        var d = doc(state.docId); if (n === 1 && d && d.kind === 'original' && !isLatest(d)) { var s = document.createElement('span'); s.className = 'stamp'; s.textContent = '旧版'; wrap.appendChild(s); }
+        pad.appendChild(wrap);
+      }
+      wrap.setAttribute('data-w0', base); wrap.style.width = Math.round(w) + 'px';
+      var cv = document.createElement('canvas'); cv.width = Math.floor(vp.width); cv.height = Math.floor(vp.height);
+      return p.render({ canvasContext: cv.getContext('2d'), viewport: vp }).promise.then(function () {
+        var old = wrap.querySelector('canvas');
+        if (tok !== drawTok) { cv.width = cv.height = 0; return; }
+        if (old) { wrap.replaceChild(cv, old); old.width = old.height = 0; } else wrap.insertBefore(cv, wrap.firstChild);
+      });
+    }).then(function () { n++; page(); });
+  })();
+  var zv = $('.zv'); if (zv) zv.textContent = z !== 1 ? Math.round(z * 100) + '%' : '幅';
+}
+var zoomT, drawTok = 0;
+function applyZoom() {
+  var z = state.zoom || 1, zv = $('.zv'); if (zv) zv.textContent = z !== 1 ? Math.round(z * 100) + '%' : '幅';
+  if (pdfDoc) {
+    // 指を動かしている間は、今の絵を拡大縮小して見せるだけにする（軽く・滑らかに）。描き直しは指を離してから
+    ++drawTok; Array.prototype.forEach.call(document.querySelectorAll('#pad .paper'), function (p) { var w0 = parseFloat(p.getAttribute('data-w0')); if (w0) p.style.width = Math.round(w0 * z) + 'px'; });
+    clearTimeout(zoomT); if (!pinch) zoomT = setTimeout(drawPdf, 200); return;
+  }
+  var p = $('#paper'); if (!p) return; var st = $('#stage'), ratio = parseFloat(p.getAttribute('data-ratio')) || (p.getAttribute('data-portrait') === 'true' ? 210 / 297 : 0);
+  var base = st.clientWidth - 32; if (ratio && ratio < 1.2) base = Math.min(base, Math.max(320, (st.clientHeight - 32) * ratio));
+  p.style.width = Math.round(Math.max(260, base) * z) + 'px';
+}
+// 画面上の点（hx, hy：表示枠の左上から）が、どの紙のどの位置（割合）に当たるか
+function anchorAt(hx, hy) {
+  var r0 = $('#stage').getBoundingClientRect(), x = r0.left + hx, y = r0.top + hy, best = null, bd = Infinity;
+  Array.prototype.forEach.call(document.querySelectorAll('#pad .paper'), function (p) { var r = p.getBoundingClientRect(), dd = y < r.top ? r.top - y : y > r.bottom ? y - r.bottom : 0; if (dd < bd) { bd = dd; best = { p: p, fx: (x - r.left) / r.width, fy: (y - r.top) / r.height }; } });
+  return best;
+}
+// 拡大縮小のあと、その紙の同じ位置が、画面上の点（hx, hy）に来るように動かす
+function keepAnchor(a, hx, hy) {
+  if (!a || !a.p.isConnected) return; var st = $('#stage'), r0 = st.getBoundingClientRect(), r = a.p.getBoundingClientRect();
+  st.scrollLeft += r.left + a.fx * r.width - (r0.left + hx); st.scrollTop += r.top + a.fy * r.height - (r0.top + hy);
+}
+function setZoom(z, cx, cy) {
+  var st = $('#stage'); if (!st) return; z = Math.max(1, Math.min(6, z));
+  var hx = cx == null ? st.clientWidth / 2 : cx, hy = cy == null ? st.clientHeight / 2 : cy, a = anchorAt(hx, hy);
+  state.zoom = z; applyZoom(); keepAnchor(a, hx, hy);
+}
+/* 指の操作（図面の表示枠の中）：1本指＝移動（はじくと惰性で動く）、2本指＝拡大・縮小と移動。
+   ブラウザに任せると、iPhoneでは拡大中に1本目の指がスクロールに取られ、2本目の指を拾えなくなるため、すべてここで扱う */
+var pts = {}, pinch = null, pan = null, fling = 0;
+function stopFling() { cancelAnimationFrame(fling); fling = 0; }
+function stageXY(e) { var r = $('#stage').getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
+function startPan(q) { var st = $('#stage'); pan = { x: q.x, y: q.y, sl: st.scrollLeft, stp: st.scrollTop, h: [{ x: q.x, y: q.y, t: performance.now() }] }; }
+function startPinch() {
+  var k = Object.keys(pts), a = pts[k[0]], b = pts[k[1]], mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  pinch = { d: Math.max(10, Math.hypot(a.x - b.x, a.y - b.y)), z: state.zoom || 1, a: anchorAt(mx, my) }; pan = null;
+}
+document.addEventListener('pointerdown', function (e) {
+  if (e.pointerType !== 'touch' || !e.target.closest('#stage')) return;
+  stopFling(); pts[e.pointerId] = stageXY(e); var k = Object.keys(pts);
+  if (k.length === 1) startPan(pts[e.pointerId]); else if (k.length === 2) startPinch();
+});
+document.addEventListener('pointermove', function (e) {
+  if (!pts[e.pointerId] || !$('#stage')) return; var q = pts[e.pointerId] = stageXY(e), k = Object.keys(pts), st = $('#stage');
+  if (pinch && k.length >= 2) {
+    var a = pts[k[0]], b = pts[k[1]];
+    state.zoom = Math.max(1, Math.min(6, pinch.z * Math.hypot(a.x - b.x, a.y - b.y) / pinch.d)); applyZoom(); keepAnchor(pinch.a, (a.x + b.x) / 2, (a.y + b.y) / 2);
+  } else if (pan) {
+    st.scrollLeft = pan.sl - (q.x - pan.x); st.scrollTop = pan.stp - (q.y - pan.y);
+    var t = performance.now(); pan.h.push({ x: q.x, y: q.y, t: t }); while (pan.h.length > 2 && t - pan.h[0].t > 100) pan.h.shift();
+  }
+});
+['pointerup', 'pointercancel'].forEach(function (type) { document.addEventListener(type, function (e) {
+  if (!pts[e.pointerId]) return; delete pts[e.pointerId]; var k = Object.keys(pts);
+  if (pinch && k.length < 2) { pinch = null; applyZoom(); if (k.length === 1) startPan(pts[k[0]]); return; } // 1本残れば、そのまま移動に移る
+  if (pan && !k.length) {
+    var h = pan.h, f = h[0], l = h[h.length - 1], dt = l.t - f.t, st = $('#stage'); pan = null;
+    if (type === 'pointercancel' || dt <= 0 || performance.now() - l.t > 80 || !st) return;
+    var vx = (l.x - f.x) / dt, vy = (l.y - f.y) / dt, last = performance.now();
+    (function step(now) { // はじいた勢いで少し動き、だんだん止まる
+      var d = Math.min(32, now - last); last = now; st.scrollLeft -= vx * d; st.scrollTop -= vy * d;
+      var k2 = Math.pow(0.995, d); vx *= k2; vy *= k2; fling = Math.hypot(vx, vy) > 0.02 && st.isConnected ? requestAnimationFrame(step) : 0;
+    })(last);
+  }
+}); });
+document.addEventListener('gesturestart', function (e) { if (e.target.closest && e.target.closest('#stage')) e.preventDefault(); }); // iPhoneの画面全体の拡大を止める
+document.addEventListener('wheel', function (e) { if (!e.ctrlKey || !e.target.closest('#stage')) return; e.preventDefault(); var r = $('#stage').getBoundingClientRect(); setZoom((state.zoom || 1) * Math.exp(-e.deltaY / 200), e.clientX - r.left, e.clientY - r.top); }, { passive: false });
+window.addEventListener('resize', function () { if (state.docId) { if (pdfDoc) { clearTimeout(zoomT); zoomT = setTimeout(drawPdf, 200); } else applyZoom(); } });
+
+/* デモの見本（実際の資料ではない） */
+function rnd(seed) { var x = 0; for (var i = 0; i < seed.length; i++) x = (x * 31 + seed.charCodeAt(i)) >>> 0; return function () { x = (x * 1664525 + 1013904223) >>> 0; return x / 4294967296; }; }
+function T(x, y, s, t, a) { return '<text x="' + x + '" y="' + y + '" font-size="' + s + '" fill="var(--paper-ink)" font-family="sans-serif"' + (a || '') + '>' + t + '</text>'; }
+function sampleSVG(d) {
+  var portrait = d.cat === 'money' || d.cat === 'meeting', W = portrait ? 210 : 420, H = 297, R = rnd(d.sid + d.v), g = '', s = site(d.siteId), i;
+  if (d.cat === 'drawing') {
+    var x0 = 30, y0 = 30, w = 300, h = 200, xs = [x0], cols = 2 + Math.floor(R() * 2), rooms = d.sub === '既存図' ? ['事務室', '倉庫', '廊下', 'EV', 'WC'] : ['会議室', '執務室', '受付', '応接', '休憩室', '客席', '厨房'];
+    g += '<rect x="' + x0 + '" y="' + y0 + '" width="' + w + '" height="' + h + '" fill="none" stroke="var(--paper-line)" stroke-width="2.2"/>';
+    for (i = 1; i < cols; i++) xs.push(x0 + Math.round(w * (i / cols + (R() - .5) * .12))); xs.push(x0 + w);
+    for (i = 0; i < cols; i++) { if (i) g += '<line x1="' + xs[i] + '" y1="' + y0 + '" x2="' + xs[i] + '" y2="' + (y0 + h) + '" stroke="var(--paper-line)" stroke-width="1.2"/>'; g += T((xs[i] + xs[i + 1]) / 2, y0 + h / 2, 8, rooms[Math.floor(R() * rooms.length)], ' text-anchor="middle"'); g += T((xs[i] + xs[i + 1]) / 2, 22, 5, String(Math.round((xs[i + 1] - xs[i]) * 30)), ' text-anchor="middle" fill="var(--paper-faint)"'); }
+    if (d.sub === '既存図') g += T(345, 40, 7, '既存図（参考）', ' font-weight="700"') + T(345, 52, 5.5, '現地と相違あり得る');
+    else g += T(345, 40, 6, '特記事項', ' font-weight="700"') + T(345, 52, 5.5, '1. 仕上げは仕上げ表による') + T(345, 62, 5.5, '2. 寸法は芯々とする') + T(345, 72, 5.5, '3. S=1/100（A3）');
+    if (d.kind === 'annotated') g += '<g fill="none" stroke="var(--pen)" stroke-width="1.6"><ellipse cx="110" cy="90" rx="34" ry="20"/><path d="M142 82q30-18 60-6"/></g>' + T(206, 78, 9, esc(d.note || '確認'), ' fill="var(--pen)" font-weight="700"');
+  } else if (d.cat === 'schedule') {
+    var tasks = ['仮設・養生', '解体・撤去', '墨出し', '軽鉄下地', '電気配線', '設備配管', 'ボード張り', '塗装・クロス', '床仕上げ', '器具取付', '清掃・検査'], st0 = 0;
+    g += T(20, 22, 11, esc(d.series), ' font-weight="700"');
+    for (i = 0; i <= 30; i++) g += '<line x1="' + (96 + i * 10) + '" y1="32" x2="' + (96 + i * 10) + '" y2="' + (40 + tasks.length * 16) + '" stroke="var(--paper-faint)" stroke-width="' + (i % 7 ? .2 : .5) + '"/>';
+    tasks.forEach(function (t, k) { var y = 44 + k * 16, len = 2 + Math.floor(R() * 5); g += T(20, y + 7, 6.5, t) + '<rect x="' + (96 + st0 * 10) + '" y="' + y + '" width="' + len * 10 + '" height="9" rx="1.5" fill="var(--paper-line)" opacity=".75"/>'; st0 = Math.min(26, st0 + Math.max(1, len - 1)); });
+  } else {
+    g += T(105, 34, 11, esc(d.series.replace(/（.*）/, '')), ' text-anchor="middle" font-weight="700"') + T(20, 54, 6, '件名：' + esc(s.name)) + T(190, 54, 5.5, jd(d.date), ' text-anchor="end"');
+    var items = d.cat === 'money' ? ['仮設工事', '解体撤去工事', '軽量鉄骨下地工事', 'ボード工事', '内装仕上工事', '建具工事', '電気設備工事', '設備工事', '諸経費'] : ['日時・場所', '出席者', '1. 前回の確認事項', '2. 工程の確認', '3. 仕様の変更点', '4. 次回までの宿題'];
+    items.forEach(function (t, k) { var y = 72 + k * 13; g += T(22, y, 5.8, t) + (d.cat === 'money' ? T(188, y, 5.8, (Math.round(R() * 180 + 20) * 1000).toLocaleString('ja-JP'), ' text-anchor="end"') : '<rect x="70" y="' + (y - 4.5) + '" width="' + (60 + R() * 55).toFixed(0) + '" height="3.2" rx="1" fill="var(--paper-faint)" opacity=".55"/>') + '<line x1="20" y1="' + (y + 4) + '" x2="190" y2="' + (y + 4) + '" stroke="var(--paper-faint)" stroke-width=".25"/>'; });
+  }
+  if (!portrait) g += '<g><rect x="270" y="251" width="140" height="38" fill="none" stroke="var(--paper-line)" stroke-width=".6"/>' + T(274, 261, 6, esc(s.name)) + T(274, 274, 7, esc(d.series), ' font-weight="700"') + T(274, 285, 5.5, '第' + d.v + '版　' + d.date.replace(/-/g, '.') + '　デモ') + '</g>';
+  g += T(W / 2, H - 6, 4.5, '試作用の見本です。実際の資料ではありません', ' text-anchor="middle" fill="var(--paper-faint)"');
+  return '<div class="paper" id="paper" data-portrait="' + portrait + '"><svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + esc(d.series) + 'の見本">' + g + '</svg>' + (d.kind === 'original' && !isLatest(d) ? '<span class="stamp">旧版</span>' : '') + '</div>';
+}
+
+/* デモのメモ写真の見本（罫線ノートに手書き風の線）。実際の写真ではない */
+function memoSVG(d, small) {
+  var R = rnd(d.sid + d.series), g = '<rect width="300" height="400" fill="#fbfaf4"/>', i, y;
+  for (i = 0; i < 17; i++) g += '<line x1="16" y1="' + (52 + i * 20) + '" x2="284" y2="' + (52 + i * 20) + '" stroke="#a9bfd3" stroke-width=".7"/>';
+  g += '<line x1="40" y1="20" x2="40" y2="390" stroke="#e3a3a3" stroke-width=".8"/>';
+  g += '<text x="48" y="44" font-size="15" font-weight="700" fill="#22336e" font-family="sans-serif">' + esc(d.series.replace(/_.*$/, '').slice(0, 14)) + '</text>';
+  for (i = 0; i < 9; i++) {
+    y = 66 + i * 20; var x = 48, path = 'M' + x + ' ' + y, w = 140 + R() * 90;
+    while (x < 48 + w) { x += 6 + R() * 6; path += ' Q' + (x - 3).toFixed(1) + ' ' + (y - 6 - R() * 4).toFixed(1) + ' ' + x.toFixed(1) + ' ' + y; }
+    g += '<path d="' + path + '" fill="none" stroke="#22336e" stroke-width="1.3" stroke-linecap="round"/>';
+  }
+  g += '<rect x="60" y="262" width="150' + '" height="88" fill="none" stroke="#22336e" stroke-width="1.4"/><path d="M60 300h60v50M150 262v40" fill="none" stroke="#22336e" stroke-width="1.1"/>';
+  g += '<text x="214" y="300" font-size="11" fill="#c0392b" font-family="sans-serif">' + (1800 + Math.round(R() * 30) * 10) + '</text>';
+  if (!small) g += '<text x="150" y="394" font-size="7" text-anchor="middle" fill="#9aa19c" font-family="sans-serif">試作用の見本です。実際の写真ではありません</text>';
+  var svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 400" role="img" aria-label="' + esc(d.series) + 'の見本">' + g + '</svg>';
+  return small ? svg : '<div class="paper" id="paper" data-ratio="0.75">' + svg + '</div>';
+}
+
+/* ================= シート ================= */
+function sheet(html, onclose) { var o = $('#overlay'); o.className = 'scrim'; o.hidden = false; o.innerHTML = '<div class="sheet gut" role="dialog" aria-modal="true"><div class="grab"></div>' + html + '</div>'; o._onclose = onclose || null; var f = o.querySelector('input[type=text]'); if (f && window.matchMedia('(pointer:fine)').matches) f.focus(); }
+function resheet(html) { var s = $('#overlay .sheet'); if (s) s.innerHTML = '<div class="grab"></div>' + html; }
+function closeSheet() { var o = $('#overlay'); if (o.hidden) return; o.hidden = true; o.innerHTML = ''; var f = o._onclose; o._onclose = null; if (f) f(); }
+function busyBtn(sel, label) { var b = $('#overlay ' + sel); if (b) { b.disabled = true; b.innerHTML = '<span class="spin"></span>' + label; } Array.prototype.forEach.call(document.querySelectorAll('#overlay [data-act=close]'), function (x) { x.disabled = true; }); }
+
+/* ---------- 設定（表示・接続） ---------- */
+function settingsSheet() {
+  var t = theme;
+  sheet('<h2>設定</h2><div class="field"><span class="lbl">表示</span><div class="seg c3">' + [['auto', '端末に合わせる'], ['light', 'ライト'], ['dark', 'ダーク']].map(function (x) { return '<button data-theme="' + x[0] + '" class="' + (t === x[0] ? 'sel' : '') + '">' + x[1] + '</button>'; }).join('') + '</div></div>' +
+    (DEMO_ONLY ? '<div class="field"><span class="lbl">データの接続先</span><div class="note">表示確認用のデモです。Google Driveには接続できません。保存・変更は画面の中だけで、再読み込みすると元に戻ります。</div></div>' + (API === Demo ? '<label class="check"><input type="checkbox" id="demofail"' + (demoFail ? ' checked' : '') + '> 次の保存を通信失敗にする（失敗の表示を確かめる）</label>' : '') + '<div class="btns"><button class="btn" data-act="close">閉じる</button></div>' : 
+        '<div class="field"><span class="lbl">データの接続先</span><div class="note">' + (API === Gas ? 'Google Drive に接続しています。' : 'デモ（試作データ）を表示しています。保存・変更は画面の中だけで、再読み込みすると元に戻ります。') + '</div>' +
+    '<label for="gas-url" class="lbl">接続先URL（Apps ScriptのWebアプリ）</label><input type="url" id="gas-url" placeholder="https://script.google.com/macros/s/…/exec" value="' + esc(conn && conn.url || '') + '">' +
+    '<label for="gas-key" class="lbl">端末キー</label><input type="password" id="gas-key" autocomplete="off" placeholder="' + (conn && conn.key ? '保存済み（変えるときだけ入力）' : '管理用シートで発行したキー') + '" value=""></div>' +
+    (API === Demo ? '<label class="check"><input type="checkbox" id="demofail"' + (demoFail ? ' checked' : '') + '> 次の保存を通信失敗にする（失敗の表示を確かめる）</label>' : '') +
+    '<div class="btns">' + (conn ? '<button class="btn" data-act="disconnect">デモに戻す</button>' : '<button class="btn" data-act="close">閉じる</button>') + '<button class="btn primary" data-act="connect">接続を確かめて保存</button></div>') +
+    '<p class="lead" style="margin-top:10px;font-size:12px">Ver.' + VERSION + (DEMO_ONLY ? '　表示確認用デモ' : '　端末ID ' + DEVICE.slice(0, 8) + '　端末キーはこの端末だけに保存され、最初に使った端末にひも付きます。') + (API === Gas && conn && conn.mode ? '　接続先：' + (conn.mode === 'test' ? 'テスト環境' : '本番') : '') + '</p>');
+}
+function doConnect() {
+  if (DEMO_ONLY) return;
+  var url = $('#gas-url').value.trim(), key = $('#gas-key').value.trim();
+  if (!key && conn && conn.key && conn.url === url) key = conn.key;  // 保存済みのキーは画面に出さず、そのまま使う
+  if (!/^https:\/\/script\.google(usercontent)?\.com\//.test(url) || !key) { toast('接続先URLと端末キーを入れてください', true); return; }
+  busyBtn('[data-act=connect]', '確認中…');
+  var prev = conn; conn = { url: url, key: key };
+  Gas.call('ping').then(function (r) {
+    conn.mode = r.mode || ''; ls(CONN_KEY, JSON.stringify(conn)); API = Gas; closeSheet(); toast('Driveに接続しました（' + (r.rootName || '保存先') + '）'); boot();
+  }).catch(function (e) { conn = prev; settingsSheet(); toast('接続できませんでした：' + e.message, true); });
+}
+
+/* ---------- 新規案件の登録：現場名（必須）・顧客名・工事名。似た現場があれば「その現場に工事を追加」を先に出す ---------- */
+function newSiteSheet(name, cust, pname, cands) {
+  var customers = []; SITES.forEach(function (s) { if (s.customer && customers.indexOf(s.customer) < 0) customers.push(s.customer); });
+  sheet('<h2>新規案件の登録</h2><p class="lead">現場名だけで登録できます。同じ現場の別の工事は、その現場に「工事を追加」します。</p>' +
+    '<div class="field"><label for="ns-name">現場名（必須）</label><input type="text" id="ns-name" value="' + esc(name || '') + '" placeholder="例：緑町事業所 2階会議室"></div>' +
+    '<div class="field"><label for="ns-cust">顧客名</label><input type="text" id="ns-cust" list="ns-custs" value="' + esc(cust || '') + '" placeholder="例：みどり精機（未定なら空欄）"><datalist id="ns-custs">' + customers.map(function (c) { return '<option value="' + esc(c) + '">'; }).join('') + '</datalist></div>' +
+    '<div class="field"><label for="ns-proj">工事名</label><input type="text" id="ns-proj" value="' + esc(pname || '') + '" placeholder="空欄なら「本工事」"></div>' +
+    (cands && cands.length ? '<div class="note warn">似た名前の現場がすでにあります。同じ現場なら［ここに工事を追加］を選んでください。</div><div class="cands">' + cands.map(function (s) { var n = siteProjects(s.id).length; return '<div class="cand"><span class="m"><span class="ell">' + esc(s.name) + '</span><small>' + esc(s.customer || '') + (n ? '・工事' + n + '件' : '') + '</small></span><button class="cbtn" data-site="' + s.id + '">開く</button><button class="cbtn pri" data-addproj="' + s.id + '">ここに工事を追加</button></div>'; }).join('') + '</div>' : '') +
+    '<div class="btns"><button class="btn" data-act="close">やめる</button><button class="btn primary" data-act="' + (cands && cands.length ? 'newsite-force' : 'newsite-save') + '">' + (cands && cands.length ? '別の現場として登録' : '登録する') + '</button></div>');
+}
+function similarSites(name) {
+  var n = norm(name); if (!n) return [];
+  return SITES.filter(function (s) { var m = norm(s.name); return m === n || (n.length >= 3 && (m.indexOf(n) >= 0 || n.indexOf(m) >= 0)); });
+}
+function saveSite(force) {
+  var name = $('#ns-name').value.trim().replace(/\s+/g, ' '), cust = $('#ns-cust').value.trim(), pname = $('#ns-proj').value.trim().replace(/\s+/g, ' ');
+  if (!name) { toast('現場名を入れてください', true); return; }
+  var c = similarSites(name);
+  if (c.length && !force) { newSiteSheet(name, cust, pname, c); return; }
+  if (c.some(function (s) { return norm(s.name) === norm(name) && (s.customer || '') === (cust || 'その他'); })) { toast('同じ顧客・同じ現場名がすでにあります。その現場に工事を追加してください', true); return; }
+  busyBtn('.btn.primary', '登録中…');
+  API.createSite({ name: name, customer: cust || 'その他', projectName: pname || '本工事', force: !!force }).then(function (s) { closeSheet(); toast('「' + s.name + '」を登録しました'); openSite(s.id); })
+    .catch(function (e) { newSiteSheet(name, cust, pname, e.code === 'DUP' ? (e.data || []).map(function (x) { return site(x.id) || x; }) : c); toast('登録できませんでした：' + e.message, true); });
+}
+
+/* ---------- 工事案件：切り替え・追加 ---------- */
+function projectsSheet() {
+  var s = site(state.siteId), ps = siteProjects(s.id);
+  sheet('<h2>工事を選ぶ</h2><p class="lead">' + esc(s.name) + '</p><div class="plist">' + ps.map(function (p) {
+    var n = projDocs(p.id).filter(isLatest).length, u = projUpdated(p.id);
+    return '<button data-proj="' + p.id + '" class="' + (p.id === state.projectId ? 'sel' : '') + '"><span class="ell">' + esc(p.name) + '</span><small class="num">資料' + n + '件' + (u ? '・' + sd(u) : '') + '</small></button>';
+  }).join('') + '</div><div class="btns"><button class="btn" data-act="close">閉じる</button><button class="btn" data-addproj="' + s.id + '">' + ic('plus') + '工事を追加</button></div>');
+}
+function addProjectSheet(siteId, name) {
+  var s = site(siteId);
+  sheet('<h2>工事案件を追加</h2><div class="dest">現場：' + esc(s.name) + '（' + esc(s.customer || '') + '）</div>' +
+    '<div class="field"><label for="np-name">工事名（必須）</label><input type="text" id="np-name" value="' + esc(name || '') + '" placeholder="例：2028年 改修工事"></div>' +
+    '<div class="note">追加工事は、もとの工事の中で管理して構いません（資料名に「追加」と付ければ十分です）。別の工事として分けるのは、契約や時期が別のときです。</div>' +
+    '<div class="btns"><button class="btn" data-act="close">やめる</button><button class="btn primary" data-act="addproj-save">追加する</button></div>');
+  $('#overlay')._siteId = siteId;
+}
+function saveProject() {
+  var siteId = $('#overlay')._siteId, name = $('#np-name').value.trim().replace(/\s+/g, ' ');
+  if (!name) { toast('工事名を入れてください', true); return; }
+  busyBtn('[data-act=addproj-save]', '追加中…');
+  API.createProject({ siteId: siteId, name: name }).then(function (p) { closeSheet(); openSite(siteId); selectProject(p.id); toast('工事「' + p.name + '」を追加しました'); })
+    .catch(function (e) { addProjectSheet(siteId, name); toast('追加できませんでした：' + e.message, true); });
+}
+
+/* ---------- Goodnotes ---------- */
+function goodnotes() {
+  var d = doc(state.docId);
+  if (d.kind === 'original' && !isLatest(d)) { sheet('<h2>旧版はGoodnotesへ渡しません</h2><p class="lead">開いているのは第' + d.v + '版です。最新は第' + latestOf(d).v + '版です。古い図面に書き込まないよう、最新版に切り替えてから渡します。</p><div class="btns"><button class="btn" data-act="close">やめる</button><button class="btn primary" data-act="tolatest">最新版を開く</button></div>'); return; }
+  sheet('<h2>Goodnotesで書き込む</h2><p class="lead">原本はDriveに残したまま、写しをGoodnotesに渡します。</p>' +
+    '<ol class="steps"><li>［PDFを共有］を押す</li><li>共有メニューで「Goodnotes」を選ぶ（なければ「その他」から）</li><li>「新規書類として読み込む」を選び、書き込む</li><li>書き終えたらGoodnotesの「書き出す → PDF」で「"ファイル"に保存」し、この資料の［書き込み済みPDFを保存］から登録する</li></ol>' +
+    '<div class="note">渡すファイル名：<span class="path">' + esc(shareName(d)) + '</span></div>' +
+    '<div class="btns"><button class="btn" data-act="opendrive">' + ic('ext') + 'Driveアプリで開く</button><button class="btn primary" data-act="doshare">' + ic('share') + 'PDFを共有</button></div>' +
+    '<p class="lead" style="margin-top:10px;font-size:12px">共有メニューが出ないときは［Driveアプリで開く］→「︙」→「アプリで開く」→ Goodnotes でも渡せます。</p>');
+}
+/* 共有メニュー（Web Share API）。HTTPSのページで、押した直後でないと開かないため、PDFは資料を開いた時点で読み込んでおく */
+function demoPdf(title) {
+  var content = '0.6 w 40 40 1110 762 re S\n1 w 80 120 m 560 120 l 560 600 l 80 600 l h S 320 120 m 320 420 l S\nBT /F1 22 Tf 620 700 Td (' + title.replace(/[^\x20-\x7e]/g, '').replace(/[()\\]/g, '') + ') Tj ET\nBT /F1 14 Tf 620 670 Td (Demo PDF. Not a real drawing.) Tj ET\n';
+  var objs = [null, '<< /Type /Catalog /Pages 2 0 R >>', '<< /Type /Pages /Kids [3 0 R] /Count 1 >>', '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 1190 842] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>', '<< /Length ' + content.length + ' >>\nstream\n' + content + 'endstream', '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'];
+  var out = '%PDF-1.4\n', offs = [], i; for (i = 1; i < objs.length; i++) { offs[i] = out.length; out += i + ' 0 obj\n' + objs[i] + '\nendobj\n'; }
+  var x = out.length; out += 'xref\n0 ' + objs.length + '\n0000000000 65535 f \n'; for (i = 1; i < objs.length; i++) out += ('0000000000' + offs[i]).slice(-10) + ' 00000 n \n';
+  return new Blob([out + 'trailer\n<< /Size ' + objs.length + ' /Root 1 0 R >>\nstartxref\n' + x + '\n%%EOF\n'], { type: 'application/pdf' });
+}
+var shareCache = {};
+function prepareShare(d) { if (d.fmt !== 'pdf' || shareCache[d.id]) return; API.blob(d).then(function (b) { shareCache[d.id] = b || demoPdf('DEMO ' + d.date); }).catch(function () {}); }
+function doShare() {
+  var d = doc(state.docId), b = shareCache[d.id], file = null, can = false;
+  if (!b && d.fmt === 'pdf') { toast('PDFの準備中です。数秒後にもう一度押してください'); prepareShare(d); return; }
+  try { file = new File([b || new Blob()], shareName(d), { type: d.fmt === 'pdf' ? 'application/pdf' : 'application/octet-stream' }); } catch (e) {}
+  try { can = !!(file && navigator.canShare && navigator.canShare({ files: [file] })); } catch (e) {}
+  if (!can) { toast('この画面では共有メニューを開けません。［Driveアプリで開く］を使ってください', true); return; }
+  navigator.share({ files: [file], title: file.name }).then(function () { closeSheet(); }).catch(function (e) { if (e && e.name !== 'AbortError') toast('共有メニューを開けませんでした（' + e.name + '）。［Driveアプリで開く］を使ってください', true); });
+}
+function shareSheet() {
+  var d = doc(state.docId); prepareShare(d);
+  sheet('<h2>共有・ダウンロード</h2><p class="lead">' + esc(fileName(d)) + '（' + kb(d.size) + '）</p>' + (d.kind === 'original' && !isLatest(d) ? '<div class="note err">旧版です。送る前に、最新版（第' + latestOf(d).v + '版）でよいか確認してください。</div>' : '') +
+    '<div class="acts"><button class="act" data-act="doshare">' + ic('share') + '<span class="t">共有メニューを開く<small>iPhone・iPad（メール・AirDropなど）</small></span></button>' +
+    '<button class="act" data-act="download">' + ic('dl') + '<span class="t">ダウンロード<small>パソコンに保存</small></span></button></div><div class="btns" style="margin-top:10px"><button class="btn" data-act="close">閉じる</button></div>');
+}
+function download() {
+  var d = doc(state.docId);
+  API.blob(d).then(function (b) {
+    if (!b) { toast('デモの見本はダウンロードできません'); return; }
+    var a = document.createElement('a'), u = URL.createObjectURL(b); a.href = u; a.download = fileName(d); document.body.appendChild(a); a.click(); a.remove(); setTimeout(function () { URL.revokeObjectURL(u); }, 4000);
+  }).catch(function (e) { toast('ダウンロードできませんでした：' + e.message, true); });
+}
+function openDrive() { var d = doc(state.docId), u = d && API.driveUrl(d); if (u) window.open(u, '_blank', 'noopener'); else toast('デモでは開けません。Drive接続後はDriveまたは対応アプリで開きます'); }
+function docMenu() { var d = doc(state.docId); sheet(sideHTML(d, d.fmt === 'pdf' && (isLatest(d) || d.kind === 'annotated')).replace('<h3>', '<h2>').replace('</h3>', '</h2>') + '<div class="btns" style="margin-top:10px"><button class="btn" data-act="close">閉じる</button></div>'); }
+
+/* ---------- 資料の追加 ---------- */
+var pending = null;
+function startAdd(files, siteId, cat) {
+  files = Array.prototype.slice.call(files || []); if (!files.length) return;
+  if (!siteId && !state.siteId) { toast('先に現場を選んでください', true); return; }
+  if (!state.projectId) { toast('先に工事を選んでください', true); return; }
+  /* uid＝送信ID。もう一度保存したときに同じ資料が二重に登録されないよう、ファイルごとに1回だけ作る */
+  pending = { siteId: siteId || state.siteId, projectId: state.projectId, cat: cat || state.cat || 'drawing', files: files.map(function (f) { return { file: f, uid: uuid(), fmt: extOf(f.name) || 'bin', title: f.name.replace(/\.[^.]+$/, '').replace(/_第\d+版.*$/, '').replace(/_\d{8}$/, ''), target: 'new', sub: null, status: null, msg: '' }; }) };
+  pending.files.forEach(guessTarget); renderAdd();
+}
+function guessTarget(f) {
+  var hit = isImg(f.fmt) ? null : DOCS.filter(function (d) { return d.projectId === pending.projectId && d.cat === pending.cat && isLatest(d) && !isMemo(d) && norm(d.series) === norm(f.title); })[0];
+  f.target = hit ? hit.id : 'new'; f.sub = hit ? hit.sub : (pending.cat === 'drawing' ? '設計図' : pending.cat === 'meeting' && isImg(f.fmt) ? MEMO : catDef(pending.cat).subs[0]);
+}
+function renderAdd() {
+  var p = pending, s = site(p.siteId), pj = project(p.projectId), c = catDef(p.cat), running = p.files.some(function (f) { return f.status === 'run'; }), done = p.files.every(function (f) { return f.status === 'ok'; });
+  var latestHere = DOCS.filter(function (d) { return d.projectId === p.projectId && d.cat === p.cat && isLatest(d) && !isMemo(d); }), lock = running || done ? ' disabled' : '';
+  var h = '<h2>資料を追加</h2><div class="dest">保存先：' + esc(s.name) + '／' + esc(pj ? pj.name : '') + '</div><p class="lead">原本は上書きしません。</p>' +
+    '<div class="field"><span class="lbl">分類</span><div class="seg c4">' + CATS.map(function (x) { return '<button data-addcat="' + x.key + '" class="' + (x.key === p.cat ? 'sel' : '') + '"' + lock + '>' + esc(x.name) + '</button>'; }).join('') + '</div></div>' +
+    '<div class="field"><span class="lbl">ファイル（' + p.files.length + '件）</span>' + p.files.map(function (f, i) {
+      var t = f.target !== 'new' ? doc(f.target) : null, nv = t ? t.v + 1 : 1, l = running || f.status === 'ok' ? ' disabled' : '';
+      var st = f.status === 'run' ? '<span class="fs run"><span class="spin"></span> ' + Math.round((f.prog || 0) * 100) + '%</span>' : f.status === 'ok' ? '<span class="fs ok">保存済み</span>' : f.status === 'err' ? '<span class="fs err">未保存</span>' : '';
+      return '<div class="frow"><span class="ft ' + ftClass(f.fmt) + '">' + ftTag(f.fmt) + '</span><div class="m">' +
+        '<input type="text" id="add-title-' + i + '" data-ftitle="' + i + '" value="' + esc(f.title) + '" aria-label="資料名"' + l + '>' +
+        '<select id="add-target-' + i + '" data-ftarget="' + i + '" aria-label="版"' + l + '><option value="new"' + (f.target === 'new' ? ' selected' : '') + '>新しい資料（第1版）</option>' + latestHere.map(function (d) { return '<option value="' + d.id + '"' + (f.target === d.id ? ' selected' : '') + '>「' + esc(d.series) + '」の新しい版（第' + (d.v + 1) + '版）</option>'; }).join('') + '</select>' +
+        (f.target === 'new' ? '<select id="add-sub-' + i + '" data-fsub="' + i + '" aria-label="区分"' + l + '>' + c.subs.map(function (sb) { return '<option' + (sb === f.sub ? ' selected' : '') + '>' + esc(sb) + '</option>'; }).join('') + '</select>' : '') +
+        '<span class="path">' + esc(c.folder + '/' + (f.target === 'new' && f.sub === MEMO ? cleanName(f.title || '無題') + '_' + ymd(today()) + '-' + hm().replace(':', '') : cleanName(f.title || '無題') + '_第' + nv + '版_' + ymd(today())) + '.' + f.fmt) + '（' + kb(f.file.size) + '）' + (t ? '　第' + t.v + '版は「' + OLD_DIR + '」へ移して残します' : '') + '</span>' +
+        (f.msg ? '<span class="fs err" style="margin:0">' + esc(f.msg) + '</span>' : '') + '</div>' + st + '</div>';
+    }).join('') + '</div>';
+  var errs = p.files.filter(function (f) { return f.status === 'err'; }).length;
+  if (errs) h += '<div class="note err">' + errs + '件は保存されていません。電波のよい場所で［もう一度保存］を押してください。</div>';
+  if (done) h += '<div class="note okk">' + p.files.length + '件を保存し、Drive側で保存されたことを確認しました。</div>';
+  h += '<div class="btns">' + (done ? '<button class="btn primary" data-act="addclose">閉じる</button>' : '<button class="btn" data-act="close"' + (running ? ' disabled' : '') + '>やめる</button><button class="btn primary" data-act="addsave"' + (running ? ' disabled' : '') + '>' + (running ? '<span class="spin"></span>保存中…' : errs ? 'もう一度保存' : '保存する') + '</button>') + '</div>';
+  if ($('#overlay').hidden) sheet(h, function () { pending = null; }); else resheet(h);
+}
+function addSave() {
+  var p = pending, todo = p.files.filter(function (f) { return f.status !== 'ok'; });
+  if (todo.some(function (f) { return !cleanName(f.title); })) { toast('資料名を入れてください', true); return; }
+  todo.forEach(function (f) { f.status = 'run'; f.prog = 0; f.msg = ''; }); renderAdd();
+  /* 1件ずつ順に保存（同じ資料の版番号が重ならないように） */
+  var chain = Promise.resolve();
+  todo.forEach(function (f) {
+    chain = chain.then(function () {
+      var t = f.target !== 'new' ? doc(f.target) : null;
+      var meta = { siteId: p.siteId, projectId: p.projectId, cat: p.cat, sub: t ? t.sub : f.sub, series: t ? t.series : cleanName(f.title), sid: t ? t.sid : null, kind: 'original', uid: f.uid };
+      return API.upload(meta, f.file, function (x) { f.prog = x; if (pending) renderAdd(); }).then(function () { f.status = 'ok'; }, function (e) { f.status = 'err'; f.msg = e.message; });
+    }).then(function () { if (pending) renderAdd(); });
+  });
+  chain.then(function () { render(); if (pending && p.files.every(function (f) { return f.status === 'ok'; })) toast('保存しました'); });
+}
+
+/* ---------- 書き込み済みPDF ---------- */
+function annAdd(file) {
+  var d = doc(state.docId), note = '書き込み ' + (new Date().getMonth() + 1) + '/' + new Date().getDate();
+  function draw(extra) {
+    var nd = { series: d.series, v: d.v, kind: 'annotated', date: today(), fmt: 'pdf' };
+    return '<h2>書き込み済みPDFを保存</h2><p class="lead">原本「' + esc(d.series) + ' 第' + d.v + '版」は上書きせず、別のファイルとして保存します。</p>' +
+      '<div class="field"><label for="ann-note">メモ（一覧に表示）</label><input type="text" id="ann-note" value="' + esc(note) + '"></div>' +
+      '<div class="note">' + esc(file.name) + '（' + kb(file.size) + '）→ <span class="path">' + esc(catDef(d.cat).folder + '/' + ANN_DIR + '/' + fileName(nd)) + '</span></div>' + (extra || '') +
+      '<div class="btns"><button class="btn" data-act="close">やめる</button><button class="btn primary" data-act="annsave">保存する</button></div>';
+  }
+  sheet(draw()); $('#overlay')._ann = { d: d, file: file, draw: draw };
+}
+function annSave() {
+  var a = $('#overlay')._ann; if (!a) return; var note = $('#ann-note').value.trim();
+  busyBtn('[data-act=annsave]', '保存中…');
+  a.uid = a.uid || uuid();
+  API.upload({ siteId: a.d.siteId, projectId: a.d.projectId, cat: a.d.cat, sub: a.d.sub, series: a.d.series, sid: a.d.sid, kind: 'annotated', baseV: a.d.v, baseId: a.d.id, note: note, uid: a.uid }, a.file)
+    .then(function () { closeSheet(); render(); renderViewer(); toast('書き込み済みPDFを保存しました（原本はそのまま）'); })
+    .catch(function (e) { resheet(a.draw('<div class="note err">保存できませんでした。Driveには入っていません。' + esc(e.message) + '</div>')); $('#overlay')._ann = a; });
+}
+
+/* ---------- 名前変更・移動・削除 ---------- */
+function manage(id) {
+  state.docId = id; if (!$('#viewer').hidden) { docMenu(); return; }
+  var d = doc(id);
+  sheet('<h2>' + esc(d.kind === 'annotated' ? d.note || d.series : d.series) + '</h2><p class="lead">' + (d.kind === 'annotated' ? '書き込み済み' : '第' + d.v + '版' + (isLatest(d) ? '（最新）' : '（旧版）')) + '・' + jd(d.date) + '</p>' +
+    '<div class="acts"><button class="act" data-doc="' + id + '">' + ic('ext') + '<span class="t">開く</span></button><button class="act" data-act="share">' + ic('dl') + '<span class="t">共有・ダウンロード</span></button>' +
+    '<button class="act" data-act="rename">' + ic('edit') + '<span class="t">名前を変更</span></button><button class="act" data-act="move">' + ic('move') + '<span class="t">別の現場・分類へ移動</span></button>' +
+    '<button class="act danger" data-act="delete">' + ic('trash') + '<span class="t">削除</span></button></div><div class="btns" style="margin-top:10px"><button class="btn" data-act="close">閉じる</button></div>');
+}
+function renameSheet() {
+  var d = doc(state.docId), n = DOCS.filter(function (x) { return x.sid === d.sid; }).length;
+  sheet('<h2>名前を変更</h2><div class="field"><label for="rn">資料名</label><input type="text" id="rn" value="' + esc(d.series) + '"></div><div class="note">' + (n > 1 ? 'この資料の版と書き込み済み（' + n + '件）の名前をそろえて変えます。' : '') + 'ファイルのIDは変わらないので、リンクは切れません。</div>' +
+    '<div class="btns"><button class="btn" data-act="close">やめる</button><button class="btn primary" data-act="dorename">変更する</button></div>');
+}
+function doRename() {
+  var d = doc(state.docId), v = cleanName($('#rn').value); if (!v) { toast('資料名を入れてください', true); return; }
+  busyBtn('[data-act=dorename]', '変更中…');
+  API.rename(d, v).then(function () { closeSheet(); render(); if (state.docId && !$('#viewer').hidden) renderViewer(); toast('名前を変更しました'); }).catch(function (e) { closeSheet(); toast('変更できませんでした。もとの名前のままです：' + e.message, true); });
+}
+function moveSheet(siteId, projId, cat) {
+  var d = doc(state.docId); siteId = siteId || d.siteId; projId = projId || (siteId === d.siteId ? d.projectId : (siteProjects(siteId)[0] || {}).id); cat = cat || d.cat;
+  sheet('<h2>別の現場・工事・分類へ移動</h2><p class="lead">「' + esc(d.series) + '」の版と書き込み済みをまとめて移動します。</p>' +
+    '<div class="field"><label for="mv-site">現場</label><select id="mv-site">' + SITES.map(function (x) { return '<option value="' + x.id + '"' + (x.id === siteId ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select></div>' +
+    '<div class="field"><label for="mv-proj">工事</label><select id="mv-proj">' + siteProjects(siteId).map(function (x) { return '<option value="' + x.id + '"' + (x.id === projId ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select></div>' +
+    '<div class="field"><label for="mv-cat">分類</label><select id="mv-cat">' + CATS.map(function (x) { return '<option value="' + x.key + '"' + (x.key === cat ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select></div>' +
+    '<div class="note">フォルダを移すだけで、コピーはしません。ファイルのIDは変わりません。</div><div class="btns"><button class="btn" data-act="close">やめる</button><button class="btn primary" data-act="domove">移動する</button></div>');
+}
+function doMove() {
+  var d = doc(state.docId), np = $('#mv-proj').value, nc = $('#mv-cat').value; if (!project(np)) { toast('工事を選んでください', true); return; } if (np === d.projectId && nc === d.cat) { closeSheet(); return; }
+  busyBtn('[data-act=domove]', '移動中…');
+  API.move(d, np, nc).then(function () { var p = project(np); closeSheet(); closeDoc(); render(); toast('「' + site(p.siteId).name + '／' + p.name + '」の' + catDef(nc).name + 'へ移動しました'); }).catch(function (e) { closeSheet(); toast('移動できませんでした。もとの場所のままです：' + e.message, true); });
+}
+function deleteSheet() {
+  var d = doc(state.docId), lat = isLatest(d), prev = lat ? originals(d)[1] : null;
+  sheet('<h2>この資料を削除しますか</h2><p class="lead"><b>' + esc(fileName(d)) + '</b></p>' + (lat && prev ? '<div class="note warn">最新版です。削除すると第' + prev.v + '版（' + jd(prev.date) + '）が最新版に戻ります。</div>' : '') +
+    '<div class="note">Driveのゴミ箱に移します。30日以内ならDriveから戻せます。</div><label class="check"><input type="checkbox" id="delok"> 削除してよいことを確認しました</label>' +
+    '<div class="btns"><button class="btn" data-act="close">やめる</button><button class="btn danger" data-act="dodelete" disabled>削除する</button></div>');
+}
+function doDelete() { var d = doc(state.docId); busyBtn('[data-act=dodelete]', '削除中…'); API.trash(d).then(function () { closeSheet(); closeDoc(); render(); toast('ゴミ箱に移しました'); }).catch(function (e) { closeSheet(); toast('削除できませんでした。資料はそのまま残っています：' + e.message, true); }); }
+
+/* ================= メモ写真 =================
+   流れ：その他 → メモを撮る → 撮影 → 保存。写真は保存が確認できるまで端末（IndexedDB）に残し、失敗しても消さない。
+   uid（送信ID）は写真ごとに1つ。もう一度保存しても、Drive側で同じ uid の資料があれば二重に作らない。 */
+var PENDING = [], memq = { db: null, mem: [] };
+function idb() {
+  return new Promise(function (res, rej) {
+    if (memq.db) { res(memq.db); return; }
+    try { var r = indexedDB.open('kk-docs', 1); r.onupgradeneeded = function () { r.result.createObjectStore('memos', { keyPath: 'uid' }); }; r.onsuccess = function () { memq.db = r.result; res(memq.db); }; r.onerror = function () { rej(r.error); }; } catch (e) { rej(e); }
+  });
+}
+function idbDo(mode, fn) { return idb().then(function (db) { return new Promise(function (res, rej) { var tx = db.transaction('memos', mode), st = tx.objectStore('memos'), out = fn(st); tx.oncomplete = function () { res(out && out.result !== undefined ? out.result : true); }; tx.onerror = function () { rej(tx.error); }; }); }); }
+function mqKeep(r) { return { uid: r.uid, siteId: r.siteId, projectId: r.projectId, title: r.title, at: r.at, ext: r.ext, type: r.type, conv: r.conv, blob: r.blob, err: r.err || '' }; }
+function mqAll() { return idbDo('readonly', function (st) { return st.getAll(); }).then(function (x) { return x || []; }, function () { return memq.mem.slice(); }); }
+function mqPut(r) { memq.mem = memq.mem.filter(function (x) { return x.uid !== r.uid; }).concat([mqKeep(r)]); return idbDo('readwrite', function (st) { st.put(mqKeep(r)); }).then(function () { return true; }, function () { return false; }); }
+function mqDel(uid) { memq.mem = memq.mem.filter(function (x) { return x.uid !== uid; }); return idbDo('readwrite', function (st) { st.delete(uid); }).then(function () { return true; }, function () { return false; }); }
+function refreshPending() { return mqAll().then(function (list) { var before = PENDING.length; PENDING = list.filter(function (r) { return r.blob; }).sort(function (a, b) { return a.at < b.at ? -1 : 1; }); if (before !== PENDING.length) render(); }); }
+function pendBar(n) { return '<div class="pendbar" role="status">' + ic('warn') + '<span>保存されていないメモが ' + n + '件あります（この端末に残っています）</span><button data-act="pending">確認して保存</button></div>'; }
+function defaultMemoTitle(at) { var d = new Date(at); return '打合せメモ_' + (d.getMonth() + 1) + '月' + d.getDate() + '日'; }
+
+/* 写真を JPEG にそろえる：向きを正しくし、長い辺を2400pxまでに縮める（文字が読める大きさ）。
+   HEIC などで変換できないときは、元のファイルのまま保存する（失敗として捨てない） */
+function prepImage(file) {
+  return new Promise(function (res) {
+    var url, img = new Image(), done = function (r) { try { URL.revokeObjectURL(url); } catch (e) {} res(r); };
+    var keep = function (why) { done({ blob: file, conv: false, why: why, ext: extOf(file.name) || 'jpg', type: file.type || 'application/octet-stream' }); };
+    try { url = URL.createObjectURL(file); } catch (e) { keep('読み込めませんでした'); return; }
+    img.onload = function () {
+      try {
+        var w = img.naturalWidth, h = img.naturalHeight, sc = Math.min(1, 2400 / Math.max(w, h)), cv = document.createElement('canvas');
+        if (!w || !h) { keep('大きさがわかりませんでした'); return; }
+        cv.width = Math.round(w * sc); cv.height = Math.round(h * sc); cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+        cv.toBlob(function (b) { if (b && b.size) done({ blob: b, conv: true, ext: 'jpg', type: 'image/jpeg', w: cv.width, h: cv.height }); else keep('JPEGに変換できませんでした'); }, 'image/jpeg', 0.85);
+      } catch (e) { keep('JPEGに変換できませんでした'); }
+    };
+    img.onerror = function () { keep('この端末では画像を読み込めませんでした'); };
+    img.src = url;
+  });
+}
+function memoStart(file) {
+  if (!file) return;
+  if (!state.siteId || !project(state.projectId)) { toast('先に現場を開いてください', true); return; }
+  var rec = { uid: uuid(), siteId: state.siteId, projectId: state.projectId, title: '', at: new Date().toISOString() };
+  sheet('<h2>メモを保存</h2><div class="pdfmsg"><span class="spin"></span> 写真を準備中</div>');
+  prepImage(file).then(function (r) {
+    rec.blob = r.blob; rec.conv = r.conv; rec.ext = r.ext; rec.type = r.type; rec.why = r.why || '';
+    return mqPut(rec).then(function (ok) { rec.durable = ok; refreshPending(); memoSheet(rec); });
+  });
+}
+function memoSheet(rec, extra) {
+  var s = site(rec.siteId), p = project(rec.projectId), dt = defaultMemoTitle(rec.at);
+  if (!rec._url) { try { rec._url = URL.createObjectURL(rec.blob); } catch (e) { rec._url = ''; } }
+  sheet('<h2>メモを保存</h2><div class="dest">保存先：' + esc(s ? s.name : '（現場が見つかりません）') + '／' + esc(p ? p.name : '') + '／その他・メモ</div>' +
+    (rec.conv === false ? '<div class="note warn">この写真はJPEGに変換できなかったため、元の形式（' + esc(String(rec.ext).toUpperCase()) + '）のまま保存します。パソコンでは表示できない場合があります。</div>' : '') +
+    (rec._url ? '<img class="mprev" src="' + rec._url + '" alt="撮影したメモ">' : '') +
+    '<div class="field"><label for="memo-title">タイトル（空欄なら「' + esc(dt) + '」）</label><input type="text" id="memo-title" value="' + esc(rec.title || '') + '" placeholder="' + esc(dt) + '" enterkeyhint="done"></div>' +
+    (rec.durable === false ? '<div class="note warn">この端末に一時保存できませんでした。保存が終わるまで画面を閉じないでください。</div>' : '') + (extra || '') +
+    '<div class="btns"><button class="btn" data-act="memo-later">あとで保存</button><button class="btn primary" data-act="memo-save"' + (s && p ? '' : ' disabled') + '>' + (rec.err ? 'もう一度保存' : '保存する') + '</button></div>' +
+    '<p class="lead" style="margin-top:8px;font-size:12px">保存が確認できるまで、写真はこの端末にも残します。</p>', function () { if (!rec.saved) { refreshPending(); if (rec.durable !== false) toast('写真はこの端末に残しています。あとで保存できます'); } });
+  var im = $('#overlay .mprev'); if (im) im.addEventListener('error', function () { im.style.display = 'none'; });
+  $('#overlay')._memo = rec;
+}
+function memoSave() {
+  var rec = $('#overlay')._memo; if (!rec || rec.busy) return;
+  var t = $('#memo-title'); rec.title = cleanName(t ? t.value : rec.title || ''); var title = rec.title || defaultMemoTitle(rec.at);
+  rec.busy = true; mqPut(rec); busyBtn('[data-act=memo-save]', '保存中…');
+  var file; try { file = new File([rec.blob], cleanName(title) + '.' + rec.ext, { type: rec.type }); } catch (e) { file = rec.blob; file.name = cleanName(title) + '.' + rec.ext; }
+  API.upload({ siteId: rec.siteId, projectId: rec.projectId, cat: 'meeting', sub: MEMO, series: title, sid: null, kind: 'original', uid: rec.uid }, file)
+    .then(function () {
+      rec.saved = true; return mqDel(rec.uid).then(function () {
+        if (rec._url) URL.revokeObjectURL(rec._url); closeSheet(); refreshPending();
+        if (state.siteId === rec.siteId) { state.projectId = rec.projectId; state.cat = 'meeting'; state.sub = MEMO; }
+        render(); toast(API === Gas ? 'メモを保存しました（Driveで確認済み）' : 'メモを保存しました');
+      });
+    })
+    .catch(function (e) { rec.busy = false; rec.err = e.message; mqPut(rec); memoSheet(rec, '<div class="note err">保存できませんでした。写真はこの端末に残っています。<br>' + esc(e.message) + '</div>'); });
+}
+function pendingSheet() {
+  sheet('<h2>保存されていないメモ</h2><p class="lead">この端末に残っている写真です。保存するか、いらなければ破棄してください。</p><div class="plist">' + PENDING.map(function (r) {
+    var s = site(r.siteId), p = project(r.projectId), d = new Date(r.at);
+    return '<div class="cand"><span class="m"><span class="ell">' + esc(r.title || defaultMemoTitle(r.at)) + '</span><small>' + esc(s ? s.name : '現場不明') + (p ? '／' + esc(p.name) : '') + '・' + (d.getMonth() + 1) + '/' + d.getDate() + ' ' + hm(d) + (r.err ? '・前回：' + esc(r.err) : '') + '</small></span>' +
+      '<button class="cbtn" data-pdel="' + r.uid + '">破棄</button><button class="cbtn pri" data-pend="' + r.uid + '">保存へ</button></div>';
+  }).join('') + '</div><div class="btns"><button class="btn" data-act="close">閉じる</button></div>');
+}
+function pendDelSheet(uid) {
+  var r = PENDING.filter(function (x) { return x.uid === uid; })[0]; if (!r) return;
+  sheet('<h2>この写真を破棄しますか</h2><p class="lead">' + esc(r.title || defaultMemoTitle(r.at)) + '</p><div class="note warn">まだDriveに保存されていません。破棄すると元に戻せません。</div>' +
+    '<label class="check"><input type="checkbox" id="pdelok"> 破棄してよいことを確認しました</label><div class="btns"><button class="btn" data-act="pending">戻る</button><button class="btn danger" data-act="pdel-ok" disabled>破棄する</button></div>');
+  $('#overlay')._pdel = uid;
+}
+
+/* ================= ドラッグ＆ドロップ ================= */
+var dragDepth = 0;
+function hasFiles(e) { return e.dataTransfer && Array.prototype.indexOf.call(e.dataTransfer.types || [], 'Files') >= 0; }
+document.addEventListener('dragenter', function (e) {
+  if (!hasFiles(e) || !$('#overlay').hidden || !state.siteId) return; e.preventDefault(); dragDepth++;
+  var ov = $('#dropov'); if (!ov.hidden) return;
+  ov.innerHTML = '<div class="dropbox"><h2>' + esc(site(state.siteId).name) + ' に追加</h2><p>入れる分類の上で離してください。保存の前に名前と版を確認できます。</p><div class="dropgrid">' + CATS.map(function (c) { return '<div class="dt-target" data-dropcat="' + c.key + '">' + esc(c.name) + '<small>' + esc(c.folder) + '</small></div>'; }).join('') + '</div></div>';
+  ov.hidden = false;
+});
+document.addEventListener('dragover', function (e) { if (!hasFiles(e) || $('#dropov').hidden) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; var t = e.target.closest && e.target.closest('[data-dropcat]'); Array.prototype.forEach.call(document.querySelectorAll('[data-dropcat]'), function (x) { x.classList.toggle('over', x === t); }); });
+document.addEventListener('dragleave', function (e) { if (!hasFiles(e)) return; dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) $('#dropov').hidden = true; });
+document.addEventListener('drop', function (e) {
+  if (!hasFiles(e)) return; e.preventDefault(); dragDepth = 0; var ov = $('#dropov'); if (ov.hidden) return; ov.hidden = true;
+  var t = e.target.closest && e.target.closest('[data-dropcat]'), cat = t ? t.getAttribute('data-dropcat') : state.cat; state.cat = cat; state.sub = null; render(); startAdd(e.dataTransfer.files, state.siteId, cat);
+});
+
+/* ================= 操作 ================= */
+document.addEventListener('input', function (e) {
+  var t = e.target;
+  if (t.id === 'q') { state.q = t.value; var pos = t.selectionStart; renderList(); var q = $('#q'); q.focus(); try { q.setSelectionRange(pos, pos); } catch (er) {} return; }
+  if (t.hasAttribute('data-ftitle')) pending.files[+t.getAttribute('data-ftitle')].title = t.value;
+});
+document.addEventListener('change', function (e) {
+  var t = e.target;
+  if (t.id === 'filepick') { startAdd(t.files); t.value = ''; return; }
+  if (t.id === 'annpick') { if (t.files[0]) annAdd(t.files[0]); t.value = ''; return; }
+  if (t.hasAttribute('data-ftarget')) { pending.files[+t.getAttribute('data-ftarget')].target = t.value; renderAdd(); return; }
+  if (t.hasAttribute('data-fsub')) { pending.files[+t.getAttribute('data-fsub')].sub = t.value; return; }
+  if (t.hasAttribute('data-ftitle')) { renderAdd(); return; }
+  if (t.id === 'delok') { $('#overlay [data-act=dodelete]').disabled = !t.checked; return; }
+  if (t.id === 'pdelok') { $('#overlay [data-act=pdel-ok]').disabled = !t.checked; return; }
+  if (t.id === 'memocam' || t.id === 'memopick') { var mf = t.files && t.files[0]; t.value = ''; memoStart(mf); return; }
+  if (t.id === 'mv-site') { moveSheet(t.value, null, $('#mv-cat').value); return; }
+  if (t.id === 'demofail') demoFail = t.checked;
+});
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { if (!$('#overlay').hidden) { if (!$('#overlay .spin')) closeSheet(); } else if (state.docId) closeDoc(); } });
+document.addEventListener('click', function (e) {
+  var t = e.target.closest('button,.scrim'); if (!t) return;
+  if (t.classList.contains('scrim')) { if (e.target === t && !t.querySelector('.spin')) closeSheet(); return; }
+  if (t.disabled) return;
+  var a;
+  if ((a = t.getAttribute('data-site'))) { closeSheet(); openSite(a); return; }
+  if ((a = t.getAttribute('data-proj'))) { closeSheet(); selectProject(a); return; }
+  if ((a = t.getAttribute('data-addproj'))) { var pn = $('#ns-proj') ? $('#ns-proj').value.trim() : ''; closeSheet(); addProjectSheet(a, pn); return; }
+  if ((a = t.getAttribute('data-pend'))) { var pr = PENDING.filter(function (x) { return x.uid === a; })[0]; closeSheet(); if (pr) { pr.durable = true; memoSheet(pr); } return; }
+  if ((a = t.getAttribute('data-pdel'))) { closeSheet(); pendDelSheet(a); return; }
+  if ((a = t.getAttribute('data-cat'))) { state.cat = a; state.sub = null; renderMain(); return; }
+  if ((a = t.getAttribute('data-sub'))) { state.sub = a === 'すべて' ? null : a; renderMain(); return; }
+  if ((a = t.getAttribute('data-toggle'))) { state.open[a] = !state.open[a]; renderMain(); return; }
+  if ((a = t.getAttribute('data-doc'))) { closeSheet(); openDoc(a); prepareShare(doc(a)); return; }
+  if ((a = t.getAttribute('data-manage'))) { manage(a); return; }
+  if ((a = t.getAttribute('data-zoom'))) { if (a === '0') { state.zoom = 0; applyZoom(); } else setZoom((state.zoom || 1) * (a === '1' ? 1.4 : 1 / 1.4)); return; }
+  if ((a = t.getAttribute('data-addcat'))) { pending.cat = a; pending.files.forEach(guessTarget); renderAdd(); return; }
+  if ((a = t.getAttribute('data-theme'))) { setTheme(a); Array.prototype.forEach.call(document.querySelectorAll('#overlay [data-theme]'), function (b) { b.classList.toggle('sel', b.getAttribute('data-theme') === a); }); return; }
+  switch (t.getAttribute('data-act')) {
+    case 'home': state.view = 'home'; render(); window.scrollTo(0, 0); break;
+    case 'clearq': state.q = ''; renderList(); $('#q').focus(); break;
+    case 'add': $('#filepick').click(); break;
+    case 'newsite': newSiteSheet(state.q.trim()); break;
+    case 'projects': projectsSheet(); break;
+    case 'addproj-save': saveProject(); break;
+    case 'memo-cam': $('#memocam').click(); break;
+    case 'memo-pick': $('#memopick').click(); break;
+    case 'memo-save': memoSave(); break;
+    case 'memo-later': closeSheet(); break;
+    case 'pending': closeSheet(); pendingSheet(); break;
+    case 'pdel-ok': var pu = $('#overlay')._pdel; mqDel(pu).then(function () { closeSheet(); refreshPending().then(function () { toast('写真を破棄しました'); if (PENDING.length) pendingSheet(); }); }); break;
+    case 'newsite-save': saveSite(false); break;
+    case 'newsite-force': saveSite(true); break;
+    case 'settings': settingsSheet(); break;
+    case 'connect': doConnect(); break;
+    case 'disconnect': ls(CONN_KEY, null); conn = null; API = Demo; closeSheet(); boot(); toast('デモに戻しました'); break;
+    case 'close': closeSheet(); break;
+    case 'closedoc': closeDoc(); break;
+    case 'goodnotes': goodnotes(); break;
+    case 'tolatest': closeSheet(); openDoc(latestOf(doc(state.docId)).id); break;
+    case 'doshare': doShare(); break;
+    case 'share': shareSheet(); break;
+    case 'docmenu': docMenu(); break;
+    case 'download': download(); break;
+    case 'opendrive': openDrive(); break;
+    case 'drive-folder': var s = site(state.siteId); if (s && s.folderId && API === Gas) window.open('https://drive.google.com/drive/folders/' + encodeURIComponent(s.folderId), '_blank', 'noopener'); else toast('デモでは開けません。Drive接続後はこの現場のフォルダを開きます'); break;
+    case 'annadd': closeSheet(); $('#annpick').click(); break;
+    case 'annsave': annSave(); break;
+    case 'addsave': addSave(); break;
+    case 'addclose': var p = pending; closeSheet(); if (p) { state.siteId = p.siteId; state.projectId = p.projectId; state.cat = p.cat; state.sub = null; state.view = 'site'; render(); } break;
+    case 'rename': renameSheet(); break;
+    case 'dorename': doRename(); break;
+    case 'move': moveSheet(); break;
+    case 'domove': doMove(); break;
+    case 'delete': deleteSheet(); break;
+    case 'dodelete': doDelete(); break;
+  }
+});
+
+/* ================= 起動 ================= */
+function boot() {
+  SITES = []; PROJECTS = []; DOCS = []; loaded = {}; THUMBS = {}; state.err = null;
+  if (API === Demo) { demoData(); if (!recent.length) recent = [SITES[0].id, SITES[1].id, SITES[7].id]; }
+  if (window.innerWidth >= 1000 && !state.siteId) state.siteId = recent[0] || null;
+  state.busy = true; render();
+  API.listSites().then(function () { state.busy = false; recent = recent.filter(site); if (state.siteId && !site(state.siteId)) state.siteId = null; if (state.siteId) state.projectId = pickProject(state.siteId); render(); if (state.siteId && !loaded[state.siteId]) openSite(state.siteId); refreshPending(); })
+    .catch(function (e) { state.busy = false; state.err = '現場の一覧を読み込めませんでした：' + e.message; render(); });
+}
+boot();
+window.__KK = { state: state, openSite: openSite, openDoc: openDoc, DOCS: function () { return DOCS; }, SITES: function () { return SITES; }, PROJECTS: function () { return PROJECTS; }, PENDING: function () { return PENDING; }, selectProject: selectProject, memoStart: memoStart, prepImage: prepImage, pendingSheet: pendingSheet, refreshPending: refreshPending, manage: manage, setTheme: setTheme, md5: md5, uuidv7: uuidv7, newSiteSheet: newSiteSheet, settingsSheet: settingsSheet, goodnotes: goodnotes };
+})();
+</script>
+
+</body>
+</html>
